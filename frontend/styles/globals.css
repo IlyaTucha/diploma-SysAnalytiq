@@ -1,0 +1,106 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@font-face {
+    font-family: 'bpmn';
+    src: url('/node_modules/bpmn-js/dist/assets/bpmn-font/font/bpmn.woff2') format('woff2'), url('/node_modules/bpmn-js/dist/assets/bpmn-font/font/bpmn.woff') format('woff'), url('/node_modules/bpmn-js/dist/assets/bpmn-font/font/bpmn.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-family: 'Inter', sans-serif;
+    }
+}
+
+.dark .djs-context-pad,
+.dark .djs-popup {
+    background-color: #18181b !important;
+    /* zinc-950 */
+}
+
+.dark .djs-context-pad .entry,
+.dark .djs-popup .entry {
+    background-color: #18181b !important;
+    color: #e4e4e7 !important;
+    /* zinc-200 */
+    box-shadow: none !important;
+}
+
+.dark .djs-context-pad .entry:hover,
+.dark .djs-popup .entry:hover {
+    background-color: #27272a !important;
+    /* zinc-800 */
+}
+
+.dark .djs-popup-header {
+    background-color: #27272a !important;
+    color: #e4e4e7 !important;
+}
+
+.dark .djs-popup-body .entry {
+    color: #e4e4e7 !important;
+}
+
+.dark .djs-context-pad .entry svg,
+.dark .djs-popup .entry svg {
+    fill: #e4e4e7 !important;
+}
+
+.dark .djs-context-pad {
+    border: none !important;
+}
+
+.dark .swagger-ui .highlight-code,
+.dark .swagger-ui .microlight,
+.dark .swagger-ui .model-example,
+.dark .swagger-ui .model-example pre {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    filter: none !important;
+}
+
+.dark .swagger-ui .model-example code,
+.dark .swagger-ui .model-example span {
+    color: #000000 !important;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--muted-foreground);
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    opacity: 0.5;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--foreground);
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted-foreground) transparent;
+}
+
+.dark .djs-direct-editing-content {
+    color: #e4e4e7 !important;
+    /* zinc-200 */
+    background-color: #18181b !important;
+    /* zinc-950 */
+}
