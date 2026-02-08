@@ -36,32 +36,58 @@
     *   `swagger-ui-react` (Визуализация API)
 
 ### Backend
-*   **Language**: Python
-*   **Framework**: Django Ninja
-*   **Architecture**: Clean Architecture
-*   **Database**: PostgreSQL / SQLite
+*   **Backend**: Python, Django, Django Ninja (Clean Architecture), PostgreSQL.
+*   **DevOps**: Docker, Docker Compose.
 
-## Установка и запуск
+## Запуск проекта
 
-### Предварительные требования
-*   Node.js (версия 18 или выше)
-*   npm
+Проект полностью контейнеризирован. Для запуска требуется **Docker** и **Docker Compose**.
 
-### Запуск Frontend части
+### Развертывание
 
-1.  Перейдите в папку фронтенда:
-    ```bash
-    cd frontend
+1.  **Создать .env файл**:
+    Автоматически подхватится дефолтный конфиг, но рекомендуется создать `.env` в корне:
+    ```
+    DEBUG=True
+    POSTGRES_DB=diploma
+    POSTGRES_USER=postgres
+    POSTGRES_PASSWORD=postgres
     ```
 
-2.  Установите зависимости:
+2.  Сборка и запуск контейнеров:
     ```bash
-    npm install
+    make build
+    make up
+    ```
+    Приложение будет доступно по адресам:
+    *   **Frontend**: http://localhost:5173
+    *   **Backend API**: http://localhost:8000
+    *   **Swagger Docs**: http://localhost:8000/api/docs
+
+3.  Остановка:
+    ```bash
+    make down
     ```
 
-3.  Запустите сервер разработки:
+4.  Применение миграций:
     ```bash
-    npm run dev
+    make migrate
     ```
 
-4.  Откройте приложение в браузере по адресу: `http://localhost:5173`
+5.  Создание суперпользователя:
+    ```bash
+    make createsuperuser
+    ```
+
+### Тестирование и Проверка
+
+*   **Backend Tests** (в контейнере):
+    ```bash
+    make test-back
+    ```
+
+*   **Frontend Check** (Линтер и Типы):
+    ```bash
+    make check-front
+    ```
+    

@@ -1,0 +1,17 @@
+django
+django-ninja
+django-ninja-extra
+django-ninja-jwt
+django-cors-headers
+
+pydantic
+python-dotenv
+psycopg2-binary
+Pillow
+requests
+pytest
+pytest-django
+
+
+
+

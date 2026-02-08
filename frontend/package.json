@@ -7,6 +7,8 @@
         "dev": "vite",
         "build": "tsc && vite build",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+        "test": "vitest",
+        "type-check": "tsc",
         "preview": "vite preview"
     },
     "dependencies": {
@@ -72,6 +74,8 @@
         "zod": "^4.1.13"
     },
     "devDependencies": {
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
         "@types/node": "^20.11.24",
         "@types/react": "^18.2.61",
         "@types/react-dom": "^18.2.19",
@@ -82,10 +86,12 @@
         "eslint": "^8.57.1",
         "eslint-plugin-react-hooks": "^7.0.1",
         "eslint-plugin-react-refresh": "^0.4.26",
+        "jsdom": "^27.4.0",
         "postcss": "^8.4.35",
         "tailwindcss": "^3.4.1",
         "typescript": "^5.3.3",
         "vite": "^5.1.4",
-        "vite-plugin-monaco-editor": "^1.1.0"
+        "vite-plugin-monaco-editor": "^1.1.0",
+        "vitest": "^4.0.18"
     }
 }
