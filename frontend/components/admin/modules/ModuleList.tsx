@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Edit, ChevronRight, BookOpen, ClipboardList } from 'lucide-react';
 import { getNoun } from '@/components/ui/utils';
-import { lessonsData } from '@/mocks/LessonsMock';
+import { useData } from '@/lib/data';
 
 interface ModuleListProps {
   modules: any[];
@@ -13,6 +13,7 @@ interface ModuleListProps {
 }
 
 export const ModuleList = ({ modules, editingId, handleEdit }: ModuleListProps) => {
+  const { lessons: lessonsData } = useData();
   return (
     <div className="space-y-4">
       {modules.map((module) => {

@@ -4,17 +4,18 @@ import { MODULE_NAMES } from "@/const";
 import { BpmnEditorPanel } from "@/components/editors/bpmn/BpmnEditorPanel";
 import { PlantUmlEditorPanel } from "@/components/editors/plantuml/PlantUmlEditorPanel";
 import { SwaggerEditorPanel } from "@/components/editors/swagger/SwaggerEditorPanel";
-import { SqlResultsTable } from "@/components/editors/sql/ui/SqlResultsTable";
-import Editor from "@monaco-editor/react";
+import { SqlEditorPanel } from "@/components/editors/sql/SqlEditorPanel";
+import { ErdEditorPanel } from "@/components/editors/erd/ErdEditorPanel";
+import { ErdLayout } from "@/components/editors/erd/ErdDiagram";
 
 interface ReviewSolutionPanelProps {
   reviewingSubmission: any;
   handleEditorDidMount: (editor: any, monaco: any) => void;
-  theme: string;
+  theme?: string;
   moduleName: string;
 }
 
-export function ReviewSolutionPanel({ reviewingSubmission, handleEditorDidMount, theme, moduleName }: ReviewSolutionPanelProps) {
+export function ReviewSolutionPanel({ reviewingSubmission, handleEditorDidMount, moduleName }: ReviewSolutionPanelProps) {
   const isBpmn = moduleName === MODULE_NAMES.BPMN;
   const isPlantUml = moduleName === MODULE_NAMES.PLANTUML;
   const isSwagger = moduleName === MODULE_NAMES.SWAGGER;
@@ -59,59 +60,30 @@ export function ReviewSolutionPanel({ reviewingSubmission, handleEditorDidMount,
     }
 
     if (isErd) {
+      const savedLayout: ErdLayout | null = reviewingSubmission.executionResult?.nodePositions
+        ? reviewingSubmission.executionResult as ErdLayout
+        : null;
       return (
-        <div className="flex flex-col h-full">
-            <div className="flex-1 min-h-0">
-                <Editor
-                height="100%"
-                defaultLanguage="apex"
-                value={reviewingSubmission.studentSolution}
-                onMount={handleEditorDidMount}
-                loading={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Загрузка редактора...</div>}
-                options={{
-                    readOnly: true,
-                    minimap: { enabled: false },
-                    scrollBeyondLastLine: false,
-                    fontSize: 14,
-                    contextmenu: true,
-                }}
-                theme={theme === 'dark' ? 'vs-dark' : 'light'}
-                />
-            </div>
-        </div>
+        <ErdEditorPanel 
+          code={reviewingSubmission.studentSolution} 
+          onChange={() => {}} 
+          readOnly={true} 
+          height="100%"
+          onMount={handleEditorDidMount}
+          initialLayout={savedLayout}
+        />
       );
     }
 
     return (
-      <div className="flex flex-col h-full">
-          <div className="flex-1 min-h-0">
-              <Editor
-              height="100%"
-              defaultLanguage="sql"
-              value={reviewingSubmission.studentSolution}
-              onMount={handleEditorDidMount}
-              loading={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Загрузка редактора...</div>}
-              options={{
-                  readOnly: true,
-                  minimap: { enabled: false },
-                  scrollBeyondLastLine: false,
-                  fontSize: 14,
-                  contextmenu: true,
-              }}
-              theme={theme === 'dark' ? 'vs-dark' : 'light'}
-              />
-          </div>
-          <div className="h-[150px] border-t bg-muted/10 p-2 overflow-auto font-mono text-sm">
-              <div className="text-xs text-muted-foreground mb-1">Результат выполнения:</div>
-              {isSql && Array.isArray(reviewingSubmission.executionResult) ? (
-                 <SqlResultsTable results={reviewingSubmission.executionResult} />
-              ) : reviewingSubmission.executionResult ? (
-                 <pre>{JSON.stringify(reviewingSubmission.executionResult, null, 2)}</pre>
-              ) : (
-                <div className="text-muted-foreground italic">Нет данных о выполнении</div>
-              )}
-          </div>
-      </div>
+      <SqlEditorPanel
+        sqlCode={reviewingSubmission.studentSolution}
+        setSqlCode={() => {}}
+        result={isSql && Array.isArray(reviewingSubmission.executionResult) ? reviewingSubmission.executionResult : reviewingSubmission.executionResult || null}
+        readOnly={true}
+        height="100%"
+        handleEditorDidMount={handleEditorDidMount}
+      />
     );
   };
 

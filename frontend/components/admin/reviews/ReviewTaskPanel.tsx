@@ -13,7 +13,11 @@ export function ReviewTaskPanel({ lessonTitle, taskDescription }: ReviewTaskPane
        </div>
        <div className="flex-1 p-4 overflow-y-auto">
           <h4 className="font-semibold mb-2">{lessonTitle}</h4>
-          <MarkdownRenderer content={taskDescription} />
+          {taskDescription ? (
+            <MarkdownRenderer content={taskDescription} />
+          ) : (
+            <p className="text-muted-foreground italic">Описание задания отсутствует</p>
+          )}
        </div>
     </div>
   );

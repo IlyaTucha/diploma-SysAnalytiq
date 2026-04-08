@@ -34,16 +34,19 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: diploma_frontend
     volumes:
       - ./frontend:/app/frontend
       - /app/frontend/node_modules
     ports:
       - "5173:5173"
+      - "80:5173"
+    env_file:
+      - .env
     environment:
-      - VITE_API_URL=http://localhost:8000/api
+      - VITE_API_URL=${VITE_API_URL:-http://127.0.0.1:8000/api}
     depends_on:
       - app
 

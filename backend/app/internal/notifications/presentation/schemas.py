@@ -6,8 +6,8 @@ from datetime import datetime
 class ReviewerSchema(Schema):
     id: UUID
     name: str
-    email: str
     avatar: Optional[str] = None
+    telegram_username: Optional[str] = None
 
 class NotificationSchema(Schema):
     id: UUID
@@ -19,14 +19,18 @@ class NotificationSchema(Schema):
     lesson_title: Optional[str] = None
     lesson_path: Optional[str] = None
     reviewer: Optional[ReviewerSchema] = None
+    highlighted_code: Optional[str] = None
+    inline_comment: Optional[str] = None
+    start_line: Optional[int] = None
+    end_line: Optional[int] = None
     
     @staticmethod
     def resolve_reviewer(obj):
         if obj.reviewer:
             return {
                 "id": obj.reviewer.id,
-                "name": obj.reviewer.name or f"{obj.reviewer.first_name} {obj.reviewer.last_name}".strip(),
-                "email": obj.reviewer.email,
-                "avatar": obj.reviewer.avatar.url if obj.reviewer.avatar else None
+                "name": obj.reviewer.display_name,
+                "avatar": obj.reviewer.avatar_url or None,
+                "telegram_username": obj.reviewer.telegram_username or None,
             }
         return None

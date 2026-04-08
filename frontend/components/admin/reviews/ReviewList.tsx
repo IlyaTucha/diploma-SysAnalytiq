@@ -1,4 +1,5 @@
 import { Submission } from '@/types/submission';
+import { Group } from '@/types/group';
 import { ReviewModuleCard } from './ReviewModuleCard';
 
 interface ReviewListProps {
@@ -7,6 +8,7 @@ interface ReviewListProps {
   openModules: number[];
   toggleModule: (moduleId: number) => void;
   handleOpenReview: (submission: Submission) => void;
+  groups?: Group[];
 }
 
 export function ReviewList({
@@ -14,7 +16,8 @@ export function ReviewList({
   groupedSubmissions,
   openModules,
   toggleModule,
-  handleOpenReview
+  handleOpenReview,
+  groups,
 }: ReviewListProps) {
   return (
     <div className="space-y-4">
@@ -30,6 +33,7 @@ export function ReviewList({
             isOpen={openModules.includes(moduleId)}
             onToggle={() => toggleModule(moduleId)}
             onOpenReview={handleOpenReview}
+            groups={groups}
           />
         );
       })}

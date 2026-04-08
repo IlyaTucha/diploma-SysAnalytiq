@@ -1,18 +1,33 @@
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { toast } from "sonner";
-import { modulesData } from '@/mocks/ModulesMock';
-import { lessonsData } from '@/mocks/LessonsMock';
+import { useData } from '@/lib/data';
+import { lessonsApi } from '@/lib/api';
 import { LessonForm } from '@/components/admin/lessons/LessonForm';
 import { ModuleHeader } from '@/components/admin/modules/ModuleHeader';
 import { LessonList } from '@/components/admin/lessons/LessonList';
 
 import { validateLessonForm } from '@/components/admin/lessons/LessonValidation';
 
+function mapLesson(l: any) {
+  return {
+    id: l.id,
+    slug: l.slug,
+    number: l.number,
+    title: l.title,
+    type: l.type,
+    content: l.content || '',
+    correctAnswer: l.correctAnswer || '',
+    hint: l.hint || '',
+    published: l.published,
+  };
+}
+
 export default function AdminModuleContent() {
   const { moduleSlug } = useParams();
+  const { modules: modulesData, lessons: lessonsData, reloadLessons } = useData();
   const [isCreatingLesson, setIsCreatingLesson] = useState(false);
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
 
@@ -22,16 +37,17 @@ export default function AdminModuleContent() {
 
   const [lessons, setLessons] = useState<any[]>(() => {
     const moduleLessons = lessonsData.filter(l => l.moduleId === currentModuleId);
-    return moduleLessons.map(l => ({
-      id: l.id,
-      title: l.title,
-      type: l.type,
-      content: l.content || '',
-      correctAnswer: '',
-      hint: l.hint || '',
-      published: l.published,
-    }));
+    return moduleLessons.map(mapLesson);
   });
+
+  // Синхронизируем локальное состояние при обновлении данных из контекста
+  const latestLessons = useMemo(() => {
+    return lessonsData.filter(l => l.moduleId === currentModuleId).map(mapLesson);
+  }, [lessonsData, currentModuleId]);
+
+  useEffect(() => {
+    setLessons(latestLessons);
+  }, [latestLessons]);
 
   const [lessonFormData, setLessonFormData] = useState({
     title: '',
@@ -50,56 +66,88 @@ export default function AdminModuleContent() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleCreateLesson = () => {
+  const handleCreateLesson = async () => {
     if (!validateForm()) {
       toast.error('Заполните все обязательные поля');
       return;
     }
 
-    const newLesson = {
-      id: crypto.randomUUID(),
-      ...lessonFormData,
-    };
-
-    setLessons([...lessons, newLesson]);
-    setLessonFormData({
-      title: '',
-      type: 'theory',
-      content: '',
-      correctAnswer: '',
-      hint: '',
-      published: false,
-    });
-    setErrors({});
-    setIsCreatingLesson(false);
-    toast.success('Урок успешно создан!');
+    try {
+      const maxNumber = lessons.reduce((max, l: any) => Math.max(max, l.number || 0), 0);
+      await lessonsApi.create({
+        moduleId: currentModuleId,
+        number: maxNumber + 1,
+        title: lessonFormData.title,
+        type: lessonFormData.type,
+        content: lessonFormData.content,
+        correctAnswer: lessonFormData.correctAnswer || undefined,
+        hint: lessonFormData.hint || undefined,
+        published: lessonFormData.published,
+      });
+      await reloadLessons();
+      setLessonFormData({ title: '', type: 'theory', content: '', correctAnswer: '', hint: '', published: false });
+      setErrors({});
+      setIsCreatingLesson(false);
+      toast.success('Урок успешно создан!');
+    } catch {
+      toast.error('Ошибка при создании урока');
+    }
   };
 
-  const handleUpdateLesson = () => {
+  const handleUpdateLesson = async () => {
     if (!validateForm()) {
       toast.error('Заполните все обязательные поля');
       return;
     }
 
-    setLessons(lessons.map(l =>
-      l.id === editingLessonId ? { ...l, ...lessonFormData } : l
-    ));
-    setLessonFormData({
-      title: '',
-      type: 'theory',
-      content: '',
-        correctAnswer: '',
-        hint: '',
-      published: false,
-    });
-    setErrors({});
-    setEditingLessonId(null);
-    toast.success('Урок обновлен!');
+    const lesson = lessons.find(l => l.id === editingLessonId);
+    if (!lesson) return;
+
+    try {
+      const identifier = lesson.slug || lesson.id;
+      await lessonsApi.update(identifier, {
+        title: lessonFormData.title,
+        type: lessonFormData.type,
+        content: lessonFormData.content,
+        correctAnswer: lessonFormData.correctAnswer || undefined,
+        hint: lessonFormData.hint || undefined,
+        published: lessonFormData.published,
+      });
+      setLessonFormData({ title: '', type: 'theory', content: '', correctAnswer: '', hint: '', published: false });
+      setErrors({});
+      setEditingLessonId(null);
+      toast.success('Урок обновлен!');
+      await reloadLessons();
+    } catch {
+      toast.error('Ошибка при обновлении урока');
+    }
   };
 
-  const handleDeleteLesson = (id: string) => {
-    setLessons(lessons.filter(l => l.id !== id));
-    toast.success('Урок удален');
+  const handleDeleteLesson = async (id: string) => {
+    const lesson = lessons.find(l => l.id === id);
+    if (!lesson) return;
+    try {
+      const identifier = lesson.slug || lesson.id;
+      await lessonsApi.delete(identifier);
+      setLessons(lessons.filter(l => l.id !== id));
+      toast.success('Урок удален');
+      reloadLessons();
+    } catch {
+      toast.error('Ошибка при удалении урока');
+    }
+  };
+
+  const handleReorderLessons = async (reorderedLessons: any[]) => {
+    setLessons(reorderedLessons);
+    try {
+      const lessonIds = reorderedLessons.map(l => l.id);
+      await lessonsApi.reorder(moduleSlug!, lessonIds);
+      await reloadLessons();
+      toast.success('Порядок уроков обновлён');
+    } catch {
+      toast.error('Ошибка при изменении порядка');
+      setLessons(latestLessons);
+    }
   };
 
   const handleEditLesson = (id: string) => {
@@ -129,7 +177,6 @@ export default function AdminModuleContent() {
 
   return (
     <div className="flex-1 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
         <ModuleHeader 
           title={currentModule?.title} 
           description={currentModule?.description} 
@@ -187,8 +234,8 @@ export default function AdminModuleContent() {
             setErrors={setErrors}
             handleEditLesson={handleEditLesson}
             handleDeleteLesson={handleDeleteLesson}
+            onReorder={handleReorderLessons}
           />
-      </div>
     </div>
   );
 }

@@ -4,11 +4,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/contexts/AuthContext';
 import { useTheme } from '@/components/contexts/ThemeProvider';
 import { useNotifications } from '@/components/contexts/NotificationContext';
-import { reviewsData } from '@/mocks/ReviewsMock';
+import { adminApi, getAccessToken } from '@/lib/api';
 
 export function AppSidebar() {
   const location = useLocation();
@@ -18,8 +18,27 @@ export function AppSidebar() {
   const { unreadCount } = useNotifications();
 
   const notificationBadgeCount = isAdmin ? 0 : unreadCount;
-  
-  const pendingReviewsCount = reviewsData.filter(r => r.status === 'pending').length;
+
+  const [pendingReviewsCount, setPendingReviewsCount] = useState(0);
+
+  useEffect(() => {
+    if (isAdmin) {
+      const loadCount = () => {
+        if (!getAccessToken()) return;
+        adminApi.submissions('pending')
+          .then(data => setPendingReviewsCount(data.length))
+          .catch(() => {});
+      };
+      loadCount();
+      const interval = setInterval(loadCount, 30000);
+      const onReviewsUpdated = () => loadCount();
+      window.addEventListener('reviews-updated', onReviewsUpdated);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('reviews-updated', onReviewsUpdated);
+      };
+    }
+  }, [isAdmin]);
 
   const baseNavItems = [
     { icon: <BookOpen className="w-5 h-5" />, label: 'Модули', path: '/modules' },
@@ -73,14 +92,14 @@ export function AppSidebar() {
           <div className="flex-1">
             <div>{user?.name || 'Пользователь'}</div>
             <div className="text-sm text-muted-foreground">
-              {isAdmin ? 'Администратор' : 'Студент'}
+              {isAdmin ? 'Преподаватель' : 'Студент'}
             </div>
           </div>
           <Settings className="w-5 h-5 text-muted-foreground" />
         </div>
       </Link>
 
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-2">
           {navItems.map((item) => (
             <li key={item.path}>

@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Save, X } from 'lucide-react';
+import { Save, X, Eye, EyeOff } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { lessonTypes } from '@/const';
 import { SqlFormFields } from './form-fields/sql/SqlFormFields';
@@ -11,6 +11,8 @@ import { ErdFormFields } from './form-fields/erd/ErdFormFields';
 import { BpmnFormFields } from './form-fields/bpmn/BpmnFormFields';
 import { PlantUMLFormFields } from './form-fields/plantuml/PlantUMLFormFields';
 import { SwaggerFormFields } from './form-fields/swagger/SwaggerFormFields';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+import { useState } from 'react';
 
 interface LessonFormData {
   title: string;
@@ -32,6 +34,8 @@ interface LessonFormProps {
 }
 
 export function LessonForm({ formData, setFormData, onSubmit, onCancel, title, moduleType, errors = {} }: LessonFormProps) {
+  const [showPreview, setShowPreview] = useState(false);
+
   return (
     <Card className="p-6 rounded-xl mb-6">
       <div className="flex items-center justify-between mb-6">
@@ -82,21 +86,40 @@ export function LessonForm({ formData, setFormData, onSubmit, onCancel, title, m
         </div>
 
         <div>
-          <Label htmlFor="lesson-content" className={errors.content ? "text-destructive" : ""}>
-            Содержание урока <span className="text-destructive">*</span>
-          </Label>
-          <Textarea
-            id="lesson-content"
-            value={formData.content}
-            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-            placeholder={
-              formData.type === 'theory'
-                ? 'Текст урока в формате Markdown...'
-                : 'Описание задания в формате Markdown...'
-            }
-            className={`mt-1 font-mono bg-background text-foreground ${errors.content ? 'border-destructive' : ''}`}
-            rows={6}
-          />
+          <div className="flex items-center justify-between mb-1">
+            <Label htmlFor="lesson-content" className={errors.content ? "text-destructive" : ""}>
+              Содержание урока <span className="text-destructive">*</span>
+            </Label>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowPreview(!showPreview)}
+              className="text-xs h-7 px-2 gap-1"
+            >
+              {showPreview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {showPreview ? 'Скрыть предпросмотр' : 'Предпросмотр'}
+            </Button>
+          </div>
+          <div className={showPreview ? 'grid grid-cols-2 gap-3' : ''}>
+            <Textarea
+              id="lesson-content"
+              value={formData.content}
+              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              placeholder={
+                formData.type === 'theory'
+                  ? 'Текст урока в формате Markdown...'
+                  : 'Описание задания в формате Markdown...'
+              }
+              className={`font-mono bg-background text-foreground ${errors.content ? 'border-destructive' : ''}`}
+              rows={showPreview ? 12 : 6}
+            />
+            {showPreview && (
+              <div className="border rounded-md p-4 overflow-y-auto max-h-[320px] bg-background">
+                <MarkdownRenderer content={formData.content || null} />
+              </div>
+            )}
+          </div>
         </div>
 
         {formData.type === 'practice' && (

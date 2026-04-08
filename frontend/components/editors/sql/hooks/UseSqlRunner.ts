@@ -50,6 +50,49 @@ export function useSqlRunner() {
     initDb();
   }, []);
 
+  const translateSqlError = (msg: string): string => {
+    // Translate common sql.js / SQLite error messages to Russian
+    if (/incomplete input/i.test(msg)) return 'Неполный SQL-запрос. Проверьте синтаксис.';
+    if (/near "(.+?)": syntax error/i.test(msg)) {
+      const m = msg.match(/near "(.+?)": syntax error/i);
+      return `Синтаксическая ошибка рядом с «${m?.[1]}».`;
+    }
+    if (/no such table: (\S+)/i.test(msg)) {
+      const m = msg.match(/no such table: (\S+)/i);
+      return `Таблица «${m?.[1]}» не найдена.`;
+    }
+    if (/no such column: (\S+)/i.test(msg)) {
+      const m = msg.match(/no such column: (\S+)/i);
+      return `Колонка «${m?.[1]}» не найдена.`;
+    }
+    if (/ambiguous column name: (\S+)/i.test(msg)) {
+      const m = msg.match(/ambiguous column name: (\S+)/i);
+      return `Неоднозначное имя колонки «${m?.[1]}». Укажите таблицу.`;
+    }
+    if (/UNIQUE constraint failed/i.test(msg)) return 'Нарушено ограничение уникальности.';
+    if (/NOT NULL constraint failed/i.test(msg)) return 'Нарушено ограничение NOT NULL.';
+    if (/FOREIGN KEY constraint failed/i.test(msg)) return 'Нарушено ограничение внешнего ключа.';
+    if (/datatype mismatch/i.test(msg)) return 'Несоответствие типов данных.';
+    if (/misuse of aggregate/i.test(msg)) return 'Неправильное использование агрегатной функции.';
+    if (/SELECTs to the left and right of UNION do not have the same number of result columns/i.test(msg))
+      return 'Запросы в UNION имеют разное количество колонок.';
+    if (/no tables specified/i.test(msg)) return 'Не указаны таблицы. Добавьте FROM в запрос.';
+    if (/no such function: (\S+)/i.test(msg)) {
+      const m = msg.match(/no such function: (\S+)/i);
+      return `Функция «${m?.[1]}» не найдена.`;
+    }
+    if (/table (\S+) has no column named (\S+)/i.test(msg)) {
+      const m = msg.match(/table (\S+) has no column named (\S+)/i);
+      return `В таблице «${m?.[1]}» нет колонки «${m?.[2]}».`;
+    }
+    if (/(?:1st|2nd|3rd|\dth) ORDER BY term out of range/i.test(msg))
+      return 'Номер колонки в ORDER BY выходит за диапазон.';
+    if (/too many terms in compound SELECT/i.test(msg)) return 'Слишком много выражений в составном запросе.';
+    if (/RIGHT and FULL OUTER JOIN/i.test(msg)) return 'RIGHT и FULL OUTER JOIN не поддерживаются в SQLite.';
+    if (/cannot use window functions in/i.test(msg)) return 'Нельзя использовать оконные функции в данном контексте.';
+    return msg; // Return as-is if no translation found
+  };
+
   const executeQuery = (sql: string) => {
     if (!db) return null;
     
@@ -77,7 +120,7 @@ export function useSqlRunner() {
         return [];
       }
     } catch (err: any) {
-      setError(err.message || 'Ошибка выполнения запроса');
+      setError(translateSqlError(err.message || 'Ошибка выполнения запроса'));
       return null;
     }
   };

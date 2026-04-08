@@ -31,7 +31,7 @@ def test_groups_flow(admin_client, user_client):
     assert resp.status_code == 200
     members = resp.json()
     assert len(members) == 1
-    assert members[0]["email"] == "student@example.com"
+    assert members[0]["telegram_username"] == "test_student"
 
     user_id = str(user_client.user.id)
     resp = admin_client.post(

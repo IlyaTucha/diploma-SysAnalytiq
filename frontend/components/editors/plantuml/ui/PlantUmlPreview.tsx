@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useTheme } from '@/components/contexts/ThemeProvider';
 // @ts-ignore
 import plantumlEncoder from 'plantuml-encoder';
@@ -16,18 +16,24 @@ export const PlantUmlPreview = ({ code, className }: PlantUmlPreviewProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  const imageUrl = useMemo(() => {
+  const [debouncedCode, setDebouncedCode] = useState(code);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedCode(code), 800);
+    return () => clearTimeout(timer);
+  }, [code]);
+
+  const imageUrl = (() => {
     try {
-      const encoded = plantumlEncoder.encode(code);
+      const encoded = plantumlEncoder.encode(debouncedCode);
       return `https://www.plantuml.com/plantuml/svg/${encoded}`;
     } catch {
       try {
-        return `https://www.plantuml.com/plantuml/svg/${btoa(encodeURIComponent(code))}`;
+        return `https://www.plantuml.com/plantuml/svg/${btoa(encodeURIComponent(debouncedCode))}`;
       } catch {
         return '';
       }
     }
-  }, [code]);
+  })();
 
   useEffect(() => {
     if (containerRef.current) {
@@ -36,11 +42,11 @@ export const PlantUmlPreview = ({ code, className }: PlantUmlPreviewProps) => {
   }, [imageUrl]);
 
   return (
-    <div ref={containerRef} className={className || ''}>
+    <div ref={containerRef} className={`${className || ''} ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
       <div
-        className={`p-4 relative min-h-[300px] max-h-[80vh] overflow-auto w-full ${theme === 'dark' ? 'bg-zinc-950' : 'bg-white'}`}
+        className={`p-4 relative h-full overflow-auto w-full ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}
       >
-        <div className="min-w-full min-h-full flex justify-center items-center">
+        <div className="min-w-full flex justify-center items-start">
           {imageUrl ? (
             <img
               ref={imgRef}

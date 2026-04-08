@@ -1,9 +1,12 @@
-﻿import { useState } from 'react';
+﻿import { useState, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { toast } from "sonner";
-import { ErdEditorPanel } from '@/components/editors/erd/ErdEditorPanel';
+import { ErdEditorPanel, ErdEditorPanelRef } from '@/components/editors/erd/ErdEditorPanel';
+import { ErdLayout } from '@/components/editors/erd/ErdDiagram';
 import { LessonLayout } from '@/components/layouts/LessonLayout';
 import { useLessonNavigation } from '../UseLessonNavigation';
 import { checkValue, getOperatorText } from '@/components/ui/operator-selector';
+import { useData } from '@/lib/data';
 
 interface ErdLessonViewProps {
   lesson: any;
@@ -11,12 +14,21 @@ interface ErdLessonViewProps {
 
 export function ErdLessonView({ lesson }: ErdLessonViewProps) {
   const { nextLink, prevLink, nextLabel, prevLabel } = useLessonNavigation();
+  const { lessonId } = useParams();
+  const { submissions } = useData();
 
   const content = lesson;
 
   const initialCode = content.initialCode || '';
 
   const [error, setError] = useState<string | null>(null);
+  const erdPanelRef = useRef<ErdEditorPanelRef>(null);
+
+  // Load saved layout from existing submission
+  const existingSubmission = lessonId ? submissions.find(s => s.lessonId === lessonId) : undefined;
+  const savedLayout: ErdLayout | null = existingSubmission?.executionResult?.nodePositions
+    ? existingSubmission.executionResult as ErdLayout
+    : null;
 
   const handleCheck = (code: string) => {
     setError(null);
@@ -34,6 +46,7 @@ export function ErdLessonView({ lesson }: ErdLessonViewProps) {
         const tables: Record<string, { columns: Record<string, string> }> = {};
         const lines = dbml.split('\n');
         let currentTable = '';
+        let inlineRefCount = 0;
         
         lines.forEach(line => {
           const trimmed = line.trim();
@@ -53,14 +66,31 @@ export function ErdLessonView({ lesson }: ErdLessonViewProps) {
               const type = parts[1];
               tables[currentTable].columns[name] = type;
             }
+            // Подсчёт inline refs: [ref: > table.col]
+            const inlineRefs = trimmed.match(/\[.*ref\s*:/gi);
+            if (inlineRefs) {
+              inlineRefCount += inlineRefs.length;
+            }
           }
         });
         
-        // Подсчет связей (Ref:)
-        const relationships = (dbml.match(/Ref:/g) || []).length;
+        // Подсчет связей: Ref: на отдельных строках + inline refs в колонках
+        const standaloneRefs = (dbml.match(/^Ref\s*:/gm) || []).length;
+        const relationships = standaloneRefs + inlineRefCount;
         
         return { tables, relationships };
       };
+
+      // Базовая проверка DBML синтаксиса
+      if (!code.trim()) {
+        throw new Error('Код схемы пустой');
+      }
+
+      const openBraces = (code.match(/{/g) || []).length;
+      const closeBraces = (code.match(/}/g) || []).length;
+      if (openBraces !== closeBraces) {
+        throw new Error(`Несоответствие фигурных скобок: открывающих ${openBraces}, закрывающих ${closeBraces}`);
+      }
 
       const studentSchema = parseDbml(code);
 
@@ -82,12 +112,13 @@ export function ErdLessonView({ lesson }: ErdLessonViewProps) {
               throw new Error(`Ожидалось связей: ${expected}${suffix}, найдено: ${studentSchema.relationships}`);
             }
           } else if (check.type === 'table_exists') {
-             if (!studentSchema.tables[check.value]) {
-               throw new Error(`Таблица "${check.value}" не найдена`);
+             if (!studentSchema.tables[check.target]) {
+               throw new Error(`Таблица "${check.target}" не найдена`);
              }
           } else if (check.type === 'column_exists') {
              // Format: TableName.ColumnName
-             const [tableName, colName] = check.value.split('.');
+             const colRef = check.target;
+             const [tableName, colName] = colRef.split('.');
              if (!studentSchema.tables[tableName]) {
                throw new Error(`Таблица "${tableName}" не найдена`);
              }
@@ -97,7 +128,54 @@ export function ErdLessonView({ lesson }: ErdLessonViewProps) {
           }
         }
       } else {
-         // Code comparison mode
+         // Code comparison mode — compare student schema against reference code
+         const referenceCode = config.code || '';
+         if (!referenceCode) {
+           throw new Error('Эталонный код не задан в конфигурации урока');
+         }
+         const referenceSchema = parseDbml(referenceCode);
+
+         if (config.checkTableCount) {
+           const expected = Object.keys(referenceSchema.tables).length;
+           const actual = Object.keys(studentSchema.tables).length;
+           if (actual !== expected) {
+             throw new Error(`Ожидалось таблиц: ${expected}, найдено: ${actual}`);
+           }
+         }
+
+         if (config.checkRelationshipCount) {
+           const expected = referenceSchema.relationships;
+           const actual = studentSchema.relationships;
+           if (actual !== expected) {
+             throw new Error(`Ожидалось связей: ${expected}, найдено: ${actual}`);
+           }
+         }
+
+         if (config.checkTableNames) {
+           const refTableNames = Object.keys(referenceSchema.tables).map(n => n.toLowerCase()).sort();
+           const studentTableNames = Object.keys(studentSchema.tables).map(n => n.toLowerCase()).sort();
+           const missing = refTableNames.filter(n => !studentTableNames.includes(n));
+           if (missing.length > 0) {
+             throw new Error(`Не найдены таблицы: ${missing.join(', ')}`);
+           }
+         }
+
+         if (config.checkColumnNames) {
+           for (const [tableName, tableData] of Object.entries(referenceSchema.tables)) {
+             const studentTable = Object.entries(studentSchema.tables).find(
+               ([name]) => name.toLowerCase() === tableName.toLowerCase()
+             );
+             if (!studentTable) {
+               throw new Error(`Таблица "${tableName}" не найдена`);
+             }
+             const refCols = Object.keys((tableData as any).columns).map(c => c.toLowerCase());
+             const studentCols = Object.keys(studentTable[1].columns).map(c => c.toLowerCase());
+             const missingCols = refCols.filter(c => !studentCols.includes(c));
+             if (missingCols.length > 0) {
+               throw new Error(`В таблице "${tableName}" не найдены колонки: ${missingCols.join(', ')}`);
+             }
+           }
+         }
       }
 
       toast.success("Задание выполнено!");
@@ -120,6 +198,7 @@ export function ErdLessonView({ lesson }: ErdLessonViewProps) {
       nextLink={nextLink}
       backLabel={prevLabel}
       nextLabel={nextLabel}
+      submissionExtra={() => erdPanelRef.current ? { executionResult: erdPanelRef.current.getLayout() } : {}}
       renderEditor={(code, setCode) => (
         <div className="h-full relative flex flex-col">
           {error && (
@@ -129,10 +208,12 @@ export function ErdLessonView({ lesson }: ErdLessonViewProps) {
           )}
           <div className="flex-1 min-h-0">
             <ErdEditorPanel
+                ref={erdPanelRef}
                 code={code}
                 onChange={setCode}
                 handleReset={() => setCode(content.initialCode || '')}
                 height="100%"
+                initialLayout={savedLayout}
             />
           </div>
         </div>

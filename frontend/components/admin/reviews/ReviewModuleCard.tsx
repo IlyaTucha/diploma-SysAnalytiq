@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { getNoun } from '@/components/ui/utils';
-import { ReviewListItem } from './ReviewListItem';
+import { ReviewLessonCard } from './ReviewLessonCard';
 import { Submission } from '@/types/submission';
+import { Group } from '@/types/group';
+import { useData } from '@/lib/data';
 
 interface ReviewModuleCardProps {
   module: any;
@@ -12,6 +15,7 @@ interface ReviewModuleCardProps {
   isOpen: boolean;
   onToggle: () => void;
   onOpenReview: (submission: Submission) => void;
+  groups?: Group[];
 }
 
 export function ReviewModuleCard({
@@ -19,9 +23,34 @@ export function ReviewModuleCard({
   submissions,
   isOpen,
   onToggle,
-  onOpenReview
+  onOpenReview,
+  groups,
 }: ReviewModuleCardProps) {
+  const { lessons: lessonsData } = useData();
+  const [openLessons, setOpenLessons] = useState<string[]>([]);
   const pendingCount = submissions.filter(s => s.status === 'pending').length;
+
+  // Группируем submissions по lessonId
+  const submissionsByLesson = submissions.reduce((acc, submission) => {
+    if (!acc[submission.lessonId]) {
+      acc[submission.lessonId] = [];
+    }
+    acc[submission.lessonId].push(submission);
+    return acc;
+  }, {} as Record<string, Submission[]>);
+
+  // Получаем уроки текущего модуля, у которых есть submissions
+  const lessonsWithSubmissions = lessonsData
+    .filter(lesson => lesson.moduleId === module.id && submissionsByLesson[lesson.id])
+    .sort((a, b) => a.number - b.number);
+
+  const toggleLesson = (lessonId: string) => {
+    setOpenLessons(prev =>
+      prev.includes(lessonId)
+        ? prev.filter(id => id !== lessonId)
+        : [...prev, lessonId]
+    );
+  };
 
   return (
     <Card className="overflow-hidden">
@@ -63,11 +92,15 @@ export function ReviewModuleCard({
 
         <CollapsibleContent>
           <div className="border-t border-border">
-            {submissions.map((submission) => (
-              <ReviewListItem 
-                key={submission.id}
-                submission={submission}
+            {lessonsWithSubmissions.map((lesson) => (
+              <ReviewLessonCard
+                key={lesson.id}
+                lesson={lesson}
+                submissions={submissionsByLesson[lesson.id] || []}
+                isOpen={openLessons.includes(lesson.id)}
+                onToggle={() => toggleLesson(lesson.id)}
                 onOpenReview={onOpenReview}
+                groups={groups}
               />
             ))}
           </div>

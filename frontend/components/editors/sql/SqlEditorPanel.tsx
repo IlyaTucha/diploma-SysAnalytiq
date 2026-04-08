@@ -14,10 +14,11 @@ import { EditorHeader } from '@/components/ui/EditorHeader';
 interface SqlEditorPanelProps {
   sqlCode: string;
   setSqlCode: (code: string) => void;
-  handleRunQuery: (code: string) => void;
-  handleReset: () => void;
+  handleRunQuery?: (code: string) => void;
+  handleReset?: () => void;
   result: any;
   handleEditorDidMount?: OnMount;
+  readOnly?: boolean;
   validationState?: 'idle' | 'success' | 'error';
   validationMessage?: string | null;
   height?: string | number;
@@ -30,6 +31,7 @@ export function SqlEditorPanel({
   handleReset,
   result,
   handleEditorDidMount,
+  readOnly = false,
   validationState,
   validationMessage,
   height = "100%"
@@ -39,6 +41,42 @@ export function SqlEditorPanel({
 
   const handleEditorOnMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
+
+    // Ensure all SQL keywords (JOIN, ON, etc.) are colored uniformly
+    monaco.editor.defineTheme('sql-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'keyword.sql', foreground: '569CD6' },
+        { token: 'keyword.block.sql', foreground: '569CD6' },
+        { token: 'operator.sql', foreground: '569CD6' },
+        { token: 'predefined.sql', foreground: '569CD6' },
+        { token: 'string.sql', foreground: '98C379' },
+        { token: 'string', foreground: '98C379' },
+        { token: 'string.double', foreground: '98C379' },
+        { token: 'string.escape', foreground: '56B6C2' },
+      ],
+      colors: {},
+    });
+
+    monaco.editor.defineTheme('sql-light', {
+      base: 'vs',
+      inherit: true,
+      rules: [
+        { token: 'keyword.sql', foreground: '0000FF' },
+        { token: 'keyword.block.sql', foreground: '0000FF' },
+        { token: 'operator.sql', foreground: '0000FF' },
+        { token: 'predefined.sql', foreground: '0000FF' },
+      ],
+      colors: {},
+    });
+
+    if (theme === 'dark') {
+      monaco.editor.setTheme('sql-dark');
+    } else {
+      monaco.editor.setTheme('sql-light');
+    }
+
     if (handleEditorDidMount) {
       handleEditorDidMount(editor, monaco);
     }
@@ -57,11 +95,11 @@ export function SqlEditorPanel({
       }
     }
     
-    handleRunQuery(queryToRun);
+    handleRunQuery?.(queryToRun);
   };
 
   return (
-    <div className="h-full flex flex-col w-full min-h-[300px] border rounded-xl overflow-hidden" style={{ height }}>
+    <div className="h-full flex flex-col w-full min-h-[300px] border rounded-r-xl overflow-hidden" style={{ height }}>
       <ResizablePanelGroup direction="vertical" className="h-full w-full min-h-[300px]" style={{ height: '100%' }}>
         <ResizablePanel defaultSize={50} minSize={20}>
           <div className="h-full flex flex-col bg-background overflow-hidden min-h-[200px]">
@@ -69,7 +107,7 @@ export function SqlEditorPanel({
               icon={<Code className="w-4 h-4 text-muted-foreground" />}
               title="SQL Editor"
               actions={
-                <EditorActions
+                !readOnly ? <EditorActions
                   actions={[{
                     label: 'Выполнить',
                     icon: <Play className="w-4 h-4 mr-2" />, 
@@ -77,7 +115,7 @@ export function SqlEditorPanel({
                     variant: 'default',
                   }]}
                   onReset={handleReset}
-                />
+                /> : undefined
               }
               className="bg-muted/20"
             />
@@ -89,7 +127,7 @@ export function SqlEditorPanel({
                 value={sqlCode}
                 onChange={(value) => setSqlCode(value || '')}
                 onMount={handleEditorOnMount}
-                theme={theme === 'dark' ? 'vs-dark' : 'light'}
+                theme={theme === 'dark' ? 'sql-dark' : 'sql-light'}
                 loading={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Загрузка редактора...</div>}
                 options={{
                   minimap: { enabled: false },
@@ -97,6 +135,7 @@ export function SqlEditorPanel({
                   scrollBeyondLastLine: false,
                   automaticLayout: true,
                   padding: { top: 16, bottom: 16 },
+                  readOnly: readOnly,
                 }}
               />
             </div>

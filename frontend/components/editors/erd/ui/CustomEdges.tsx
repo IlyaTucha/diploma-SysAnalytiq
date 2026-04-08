@@ -22,6 +22,7 @@ export const CustomBezierEdge = ({
   selected: _selected
 }: EdgeProps) => {
   const { setEdges, getZoom } = useReactFlow();
+  const [hovered, setHovered] = useState(false);
   const [edgePath] = getBezierPath({
     sourceX,
     sourceY,
@@ -60,15 +61,19 @@ export const CustomBezierEdge = ({
       document.addEventListener('mouseup', upHandler);
   };
 
+  const hoverStyle = hovered ? { ...style, stroke: '#3b82f6', strokeWidth: 2.5, transition: 'stroke 0.15s, stroke-width 0.15s' } : { ...style, transition: 'stroke 0.15s, stroke-width 0.15s' };
+
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} markerStart={markerStart} style={style} />
+      <BaseEdge path={edgePath} markerEnd={markerEnd} markerStart={markerStart} style={hoverStyle} />
       <path
         d={edgePath}
         fill="none"
         strokeOpacity={0}
-        strokeWidth={30}
+        strokeWidth={4}
         onMouseDown={onEdgeMouseDown}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         style={{ cursor: 'grab', pointerEvents: 'all', zIndex: 9999 }}
       />
     </>
@@ -154,6 +159,7 @@ export const CustomStepEdge = ({
 }: EdgeProps) => {
   const { setEdges, getZoom, screenToFlowPosition, getNode } = useReactFlow();
   const [cursor, setCursor] = useState('default');
+  const [hovered, setHovered] = useState(false);
   
   const { path: edgePath, segments } = getSmartEdgeParams(
       sourceX, sourceY, targetX, targetY, 
@@ -299,16 +305,20 @@ export const CustomStepEdge = ({
       document.addEventListener('mouseup', upHandler);
   };
 
+  const hoverStyle = hovered ? { ...style, stroke: '#3b82f6', strokeWidth: 2.5, transition: 'stroke 0.15s, stroke-width 0.15s' } : { ...style, transition: 'stroke 0.15s, stroke-width 0.15s' };
+
   return (
     <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} markerStart={markerStart} style={style} />
+      <BaseEdge path={edgePath} markerEnd={markerEnd} markerStart={markerStart} style={hoverStyle} />
       <path
         d={edgePath}
         fill="none"
         strokeOpacity={0}
-        strokeWidth={40}
+        strokeWidth={6}
         onMouseMove={onEdgeMouseMove}
         onMouseDown={onEdgeMouseDown}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         style={{ cursor: cursor, pointerEvents: 'all' }}
       />
     </>

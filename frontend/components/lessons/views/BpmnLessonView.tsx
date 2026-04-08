@@ -85,6 +85,25 @@ export function BpmnLessonView({ lesson }: BpmnLessonViewProps) {
           }
       }
 
+      // Проверка: все задачи и шлюзы должны иметь хотя бы одно соединение
+      const flowElements = [
+        ...Array.from(doc.getElementsByTagNameNS("*", "task")),
+        ...Array.from(doc.getElementsByTagNameNS("*", "userTask")),
+        ...Array.from(doc.getElementsByTagNameNS("*", "serviceTask")),
+        ...Array.from(doc.getElementsByTagNameNS("*", "sendTask")),
+        ...Array.from(doc.getElementsByTagNameNS("*", "receiveTask")),
+        ...Array.from(doc.getElementsByTagNameNS("*", "exclusiveGateway")),
+        ...Array.from(doc.getElementsByTagNameNS("*", "inclusiveGateway")),
+        ...Array.from(doc.getElementsByTagNameNS("*", "parallelGateway")),
+      ];
+      for (const el of flowElements) {
+        const id = el.getAttribute("id") || "";
+        if (!sourceRefs.has(id) && !targetRefs.has(id)) {
+          const name = el.getAttribute("name") || id;
+          throw new Error(`Элемент «${name}» не соединён ни одним потоком управления`);
+        }
+      }
+
       if (config.mode === 'manual') {
         const checks = config.checks || [];
         for (const check of checks) {
@@ -108,18 +127,111 @@ export function BpmnLessonView({ lesson }: BpmnLessonViewProps) {
             if (!checkValue(count, expected, operator)) {
               throw new Error(`Ожидалось элементов ${check.element}: ${expected}${suffix}, найдено: ${count}`);
             }
-          } else if (check.type === 'connection_count') {
+          } else if (check.type === 'connection_count' || check.type === 'edge_count') {
              if (!checkValue(flows, expected, operator)) {
                throw new Error(`Ожидалось связей: ${expected}${suffix}, найдено: ${flows}`);
              }
-          } else if (check.type === 'contains_text') {
-             if (!code.includes(check.value)) {
-               throw new Error(`Диаграмма должна содержать элемент с текстом: "${check.value}"`);
+          } else if (check.type === 'node_count') {
+             const nodeCount = tasks + startEvents + endEvents + gateways;
+             if (!checkValue(nodeCount, expected, operator)) {
+               throw new Error(`Ожидалось узлов: ${expected}${suffix}, найдено: ${nodeCount}`);
+             }
+          } else if (check.type === 'node_exists' || check.type === 'contains_text') {
+             if (!code.includes(check.target)) {
+               throw new Error(`Диаграмма должна содержать элемент: "${check.target}"`);
+             }
+          } else if (check.type === 'lane_count') {
+             const laneCount = lanes > 0 ? lanes : participants;
+             if (!checkValue(laneCount, expected, operator)) {
+               throw new Error(`Ожидалось дорожек: ${expected}${suffix}, найдено: ${laneCount}`);
+             }
+          } else if (check.type === 'gateway_count') {
+             if (!checkValue(gateways, expected, operator)) {
+               throw new Error(`Ожидалось шлюзов: ${expected}${suffix}, найдено: ${gateways}`);
              }
           }
         }
-      } else {
-         // Code comparison mode
+      } else if (config.code) {
+        // Режим сравнения с эталонным кодом
+        const bpmnTypeLabels: Record<string, string> = {
+          'participant': 'пул',
+          'lane': 'дорожка',
+          'task': 'задача',
+          'userTask': 'задача',
+          'serviceTask': 'задача',
+          'sendTask': 'задача',
+          'receiveTask': 'задача',
+          'startEvent': 'начальное событие',
+          'endEvent': 'конечное событие',
+          'exclusiveGateway': 'шлюз',
+          'inclusiveGateway': 'шлюз',
+          'parallelGateway': 'шлюз',
+        };
+        const parseBpmn = (xmlStr: string) => {
+          const d = parser.parseFromString(xmlStr, "text/xml");
+          const t = d.getElementsByTagNameNS("*", "task").length + 
+                    d.getElementsByTagNameNS("*", "userTask").length +
+                    d.getElementsByTagNameNS("*", "serviceTask").length +
+                    d.getElementsByTagNameNS("*", "sendTask").length +
+                    d.getElementsByTagNameNS("*", "receiveTask").length;
+          const se = d.getElementsByTagNameNS("*", "startEvent").length;
+          const ee = d.getElementsByTagNameNS("*", "endEvent").length;
+          const g = d.getElementsByTagNameNS("*", "exclusiveGateway").length +
+                    d.getElementsByTagNameNS("*", "inclusiveGateway").length +
+                    d.getElementsByTagNameNS("*", "parallelGateway").length;
+          const f = d.getElementsByTagNameNS("*", "sequenceFlow").length;
+          const la = d.getElementsByTagNameNS("*", "lane").length;
+          const pa = d.getElementsByTagNameNS("*", "participant").length;
+          // Собираем имена элементов с типами
+          const namedElements: { name: string; type: string }[] = [];
+          const allElements = d.getElementsByTagNameNS("*", "*");
+          for (let i = 0; i < allElements.length; i++) {
+            const name = allElements[i].getAttribute("name");
+            if (name) {
+              const localName = allElements[i].localName;
+              namedElements.push({ name, type: localName });
+            }
+          }
+          return { nodeCount: t + se + ee + g, edgeCount: f, laneCount: la > 0 ? la : pa, gatewayCount: g, namedElements };
+        };
+
+        const refStats = parseBpmn(config.code);
+
+        if (config.checkNodeCount) {
+          const studentNodeCount = tasks + startEvents + endEvents + gateways;
+          if (studentNodeCount !== refStats.nodeCount) {
+            throw new Error(`Ожидалось узлов: ${refStats.nodeCount}, найдено: ${studentNodeCount}`);
+          }
+        }
+        if (config.checkEdgeCount && flows !== refStats.edgeCount) {
+          throw new Error(`Ожидалось связей: ${refStats.edgeCount}, найдено: ${flows}`);
+        }
+        const studentLaneCount = lanes > 0 ? lanes : participants;
+        if (config.checkLaneCount && studentLaneCount !== refStats.laneCount) {
+          throw new Error(`Ожидалось дорожек: ${refStats.laneCount}, найдено: ${studentLaneCount}`);
+        }
+        if (config.checkGatewayCount && gateways !== refStats.gatewayCount) {
+          throw new Error(`Ожидалось шлюзов: ${refStats.gatewayCount}, найдено: ${gateways}`);
+        }
+        if (config.checkNodeNames) {
+          // Собираем имена элементов студента
+          const studentNames: string[] = [];
+          const allElements = doc.getElementsByTagNameNS("*", "*");
+          for (let i = 0; i < allElements.length; i++) {
+            const name = allElements[i].getAttribute("name");
+            if (name) studentNames.push(name);
+          }
+          const studentNamesLower = studentNames.map(n => n.toLowerCase());
+          const missingElements = refStats.namedElements.filter((el: { name: string }) => !studentNamesLower.includes(el.name.toLowerCase()));
+          if (missingElements.length > 0) {
+            const items = missingElements.slice(0, 3).map((el: { name: string; type: string }) => {
+              const typeLabel = bpmnTypeLabels[el.type] || 'элемент';
+              return `${typeLabel} «${el.name}»`;
+            });
+            const suffix = missingElements.length > 3 ? '...' : '';
+            throw new Error(`Отсутствуют: ${items.join(', ')}${suffix}`);
+          }
+        }
       }
 
       toast.success("Задание выполнено!");

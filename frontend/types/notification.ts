@@ -1,6 +1,6 @@
 import { User } from './user';
 
-export type NotificationType = 'approved' | 'rejected';
+export type NotificationType = 'approved' | 'rejected' | 'pending';
 
 export interface Notification {
   id: string;

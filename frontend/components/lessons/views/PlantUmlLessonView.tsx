@@ -21,6 +21,25 @@ export function PlantUmlLessonView({ lesson }: PlantUmlLessonViewProps) {
   const handleCheck = (code: string) => {
     setError(null);
     try {
+      // Базовая синтаксическая проверка PlantUML
+      const trimmed = code.trim();
+      if (!trimmed) {
+        throw new Error('Код диаграммы пустой');
+      }
+      if (!trimmed.includes('@startuml')) {
+        throw new Error('Диаграмма должна начинаться с @startuml');
+      }
+      if (!trimmed.includes('@enduml')) {
+        throw new Error('Диаграмма должна заканчиваться на @enduml');
+      }
+
+      // Извлекаем содержимое между @startuml и @enduml
+      const bodyMatch = trimmed.match(/@startuml[\s\S]*?@enduml/);
+      if (!bodyMatch) {
+        throw new Error('Некорректная структура диаграммы');
+      }
+      const body = bodyMatch[0];
+
       let config: any = { mode: 'code', code: '' };
       try {
         if (lesson?.correctAnswer && lesson.correctAnswer.trim().startsWith('{')) {
@@ -30,8 +49,27 @@ export function PlantUmlLessonView({ lesson }: PlantUmlLessonViewProps) {
         console.error("Ошибка парсинга конфигурации урока");
       }
 
+      // Универсальный парсинг PlantUML кода
+      const parsePlantUml = (pumlBody: string) => {
+        const lines = pumlBody.split('\n').map((l: string) => l.trim()).filter((l: string) => l && !l.startsWith("'") && !l.startsWith('@'));
+        const participantCount = lines.filter((l: string) =>
+          /^(participant|actor|database|queue|entity|boundary|control|collections)\s+/i.test(l)
+        ).length;
+        const relationshipCount = lines.filter((l: string) =>
+          /\s*-+>|<-+\s*|\.+>|<\.+/.test(l) && !/^(participant|actor|database|queue|entity|boundary|control|collections|note|end|group|loop|alt|else|ref|title|header|footer)\s/i.test(l)
+        ).length;
+        const classCount = lines.filter((l: string) => /^(class|abstract\s+class)\s+/i.test(l)).length;
+        const interfaceCount = lines.filter((l: string) => /^interface\s+/i.test(l)).length;
+        const loopCount = lines.filter((l: string) => /^loop\b/i.test(l)).length;
+        const altCount = lines.filter((l: string) => /^alt\b/i.test(l)).length;
+        return { participantCount, relationshipCount, classCount, interfaceCount, loopCount, altCount };
+      };
+
+      const studentStats = parsePlantUml(body);
+
       if (config.mode === 'manual') {
         const checks = config.checks || [];
+
         for (const check of checks) {
           const expected = parseInt(check.value);
           const operator = check.operator || '=';
@@ -39,23 +77,61 @@ export function PlantUmlLessonView({ lesson }: PlantUmlLessonViewProps) {
           const suffix = opText ? ` (${opText})` : '';
 
           if (check.type === 'participant_count') {
-            const participants = (code.match(/participant|actor|database|queue/g) || []).length;
-            if (!checkValue(participants, expected, operator)) {
-              throw new Error(`Ожидалось участников: ${expected}${suffix}, найдено: ${participants}`);
+            if (!checkValue(studentStats.participantCount, expected, operator)) {
+              throw new Error(`Ожидалось участников: ${expected}${suffix}, найдено: ${studentStats.participantCount}`);
             }
-          } else if (check.type === 'message_count') {
-            const messages = (code.match(/->|-->/g) || []).length;
-            if (!checkValue(messages, expected, operator)) {
-              throw new Error(`Ожидалось сообщений: ${expected}${suffix}, найдено: ${messages}`);
+          } else if (check.type === 'message_count' || check.type === 'relationship_count') {
+            if (!checkValue(studentStats.relationshipCount, expected, operator)) {
+              throw new Error(`Ожидалось связей: ${expected}${suffix}, найдено: ${studentStats.relationshipCount}`);
             }
-          } else if (check.type === 'contains_text') {
-             if (!code.includes(check.value)) {
-               throw new Error(`Код должен содержать: "${check.value}"`);
+          } else if (check.type === 'class_count') {
+            if (!checkValue(studentStats.classCount, expected, operator)) {
+              throw new Error(`Ожидалось классов: ${expected}${suffix}, найдено: ${studentStats.classCount}`);
+            }
+          } else if (check.type === 'interface_count') {
+            if (!checkValue(studentStats.interfaceCount, expected, operator)) {
+              throw new Error(`Ожидалось интерфейсов: ${expected}${suffix}, найдено: ${studentStats.interfaceCount}`);
+            }
+          } else if (check.type === 'loop_count') {
+            if (!checkValue(studentStats.loopCount, expected, operator)) {
+              throw new Error(`Ожидалось циклов: ${expected}${suffix}, найдено: ${studentStats.loopCount}`);
+            }
+          } else if (check.type === 'alt_count') {
+            if (!checkValue(studentStats.altCount, expected, operator)) {
+              throw new Error(`Ожидалось условий: ${expected}${suffix}, найдено: ${studentStats.altCount}`);
+            }
+          } else if (check.type === 'element_exists' || check.type === 'contains_text') {
+             if (!code.includes(check.target)) {
+               throw new Error(`Код должен содержать: "${check.target}"`);
              }
           }
         }
-      } else {
-         // Code comparison mode
+      } else if (config.code) {
+        // Режим сравнения с эталонным кодом
+        const refBody = config.code.match(/@startuml[\s\S]*?@enduml/);
+        if (!refBody) {
+          throw new Error('Ошибка в эталонном решении');
+        }
+        const refStats = parsePlantUml(refBody[0]);
+
+        if (config.checkParticipantCount && studentStats.participantCount !== refStats.participantCount) {
+          throw new Error(`Ожидалось участников: ${refStats.participantCount}, найдено: ${studentStats.participantCount}`);
+        }
+        if (config.checkRelationshipCount && studentStats.relationshipCount !== refStats.relationshipCount) {
+          throw new Error(`Ожидалось связей: ${refStats.relationshipCount}, найдено: ${studentStats.relationshipCount}`);
+        }
+        if (config.checkClassCount && studentStats.classCount !== refStats.classCount) {
+          throw new Error(`Ожидалось классов: ${refStats.classCount}, найдено: ${studentStats.classCount}`);
+        }
+        if (config.checkInterfaceCount && studentStats.interfaceCount !== refStats.interfaceCount) {
+          throw new Error(`Ожидалось интерфейсов: ${refStats.interfaceCount}, найдено: ${studentStats.interfaceCount}`);
+        }
+        if (config.checkLoopCount && studentStats.loopCount !== refStats.loopCount) {
+          throw new Error(`Ожидалось циклов: ${refStats.loopCount}, найдено: ${studentStats.loopCount}`);
+        }
+        if (config.checkAltCount && studentStats.altCount !== refStats.altCount) {
+          throw new Error(`Ожидалось условий: ${refStats.altCount}, найдено: ${studentStats.altCount}`);
+        }
       }
 
       toast.success("Задание выполнено!");

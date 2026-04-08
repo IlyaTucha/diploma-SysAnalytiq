@@ -45,7 +45,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for m in MODULES:
-            _, created = Module.objects.get_or_create(slug=m["slug"], defaults=m)
-            status = "created" if created else "already exists"
+            _, created = Module.objects.update_or_create(slug=m["slug"], defaults={
+                k: v for k, v in m.items() if k != "slug"
+            })
+            status = "created" if created else "updated"
             self.stdout.write(f"  {m['title']}: {status}")
         self.stdout.write(self.style.SUCCESS("Done."))

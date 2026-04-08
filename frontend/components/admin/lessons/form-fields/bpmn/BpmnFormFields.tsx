@@ -4,6 +4,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import { OperatorSelector } from '@/components/ui/operator-selector';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface BpmnFormFieldsProps {
   correctAnswer: string;
@@ -11,13 +18,14 @@ interface BpmnFormFieldsProps {
   hasError?: boolean;
 }
 
-type CheckType = 'node_count' | 'edge_count' | 'node_exists' | 'edge_exists' | 'lane_count' | 'gateway_count';
+type CheckType = 'node_count' | 'edge_count' | 'node_exists' | 'edge_exists' | 'lane_count' | 'gateway_count' | 'element_count';
 
 interface BpmnCheck extends BaseCheck {
   type: CheckType;
   target?: string;
   value?: string;
   operator?: string;
+  element?: string;
 }
 
 interface BpmnValidationConfig extends BaseValidationConfig {
@@ -78,27 +86,76 @@ export function BpmnFormFields({ correctAnswer, onChange, hasError }: BpmnFormFi
   };
 
   const checkTypes = [
-    { value: 'node_exists', label: 'Наличие элемента' },
+    { value: 'element_count', label: 'Количество по типу элемента' },
     { value: 'node_count', label: 'Количество элементов' },
     { value: 'edge_count', label: 'Количество связей' },
     { value: 'lane_count', label: 'Количество дорожек' },
     { value: 'gateway_count', label: 'Количество шлюзов' },
   ];
 
+  const bpmnElementTypes = [
+    { value: 'startEvent', label: 'Начальное событие', icon: '○' },
+    { value: 'endEvent', label: 'Конечное событие', icon: '◉' },
+    { value: 'task', label: 'Задача', icon: '▭' },
+    { value: 'userTask', label: 'Пользовательская задача', icon: '👤▭' },
+    { value: 'serviceTask', label: 'Сервисная задача', icon: '⚙▭' },
+    { value: 'sendTask', label: 'Задача отправки', icon: '✉▭' },
+    { value: 'receiveTask', label: 'Задача приёма', icon: '📩▭' },
+    { value: 'exclusiveGateway', label: 'Эксклюзивный шлюз (XOR)', icon: '◇✕' },
+    { value: 'parallelGateway', label: 'Параллельный шлюз (AND)', icon: '◇+' },
+    { value: 'inclusiveGateway', label: 'Инклюзивный шлюз (OR)', icon: '◇○' },
+    { value: 'lane', label: 'Дорожка', icon: '═' },
+    { value: 'participant', label: 'Пул / Участник', icon: '▬' },
+    { value: 'intermediateThrowEvent', label: 'Промежуточное событие (отправка)', icon: '◎↑' },
+    { value: 'intermediateCatchEvent', label: 'Промежуточное событие (приём)', icon: '◎↓' },
+  ];
+
   const renderCheckFields = (check: BpmnCheck, updateCheck: (updates: Partial<BpmnCheck>) => void) => {
-    if (check.type === 'node_exists') {
+    if (check.type === 'element_count') {
       return (
-        <div className="space-y-2 col-span-2">
-          <Label className={hasError && !check.target ? "text-destructive" : ""}>
-            Значение <span className="text-destructive">*</span>
-          </Label>
-          <Input 
-            value={check.target || ''}
-            onChange={(e) => updateCheck({ target: e.target.value })}
-            placeholder="Имя элемента (например: Start Event)"
-            className={hasError && !check.target ? "border-destructive" : ""}
-          />
-        </div>
+        <>
+          <div className="space-y-2">
+            <Label className={hasError && !check.element ? "text-destructive" : ""}>
+              Тип элемента <span className="text-destructive">*</span>
+            </Label>
+            <div className="flex gap-2 items-center">
+              <Select
+                value={check.element || ''}
+                onValueChange={(v) => updateCheck({ element: v })}
+              >
+                <SelectTrigger className={`flex-1 ${hasError && !check.element ? "border-destructive" : ""}`}>
+                  <SelectValue placeholder="Выберите тип элемента" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bpmnElementTypes.map((el) => (
+                    <SelectItem key={el.value} value={el.value}>
+                      <span className="flex items-center gap-2">
+                        <span className="text-base w-6 text-center font-mono">{el.icon}</span>
+                        <span>{el.label}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <OperatorSelector 
+                value={check.operator || '='}
+                onChange={(v: string) => updateCheck({ operator: v })}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className={hasError && !check.value ? "text-destructive" : ""}>
+              Значение <span className="text-destructive">*</span>
+            </Label>
+            <Input 
+              type="number"
+              value={check.value || ''}
+              onChange={(e) => updateCheck({ value: e.target.value })}
+              placeholder="Например: 3"
+              className={hasError && !check.value ? "border-destructive" : ""}
+            />
+          </div>
+        </>
       );
     }
 
@@ -209,7 +266,7 @@ export function BpmnFormFields({ correctAnswer, onChange, hasError }: BpmnFormFi
       renderGlobalOptions={renderGlobalOptions}
       defaultCheck={{
         id: '',
-        type: 'node_exists',
+        type: 'element_count',
         target: '',
         value: '',
         operator: '='

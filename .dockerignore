@@ -1,0 +1,16 @@
+node_modules
+frontend/node_modules
+frontend/dist
+backend/__pycache__
+backend/*.pyc
+backend/.pytest_cache
+.git
+.gitignore
+README.md
+ROADMAP.md
+Makefile
+docker-compose.yml
+.env
+*.log
+.vscode
+.DS_Store

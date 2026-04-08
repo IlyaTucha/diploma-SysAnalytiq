@@ -1,24 +1,30 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, XCircle, MessageSquare, ArrowRight, Code, ChevronDown } from 'lucide-react';
+import { CheckCircle, XCircle, MessageSquare, ArrowRight, Code, ChevronDown, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Notification } from '@/types/notification';
+import { TelegramLink } from '@/components/ui/TelegramLink';
 
 interface NotificationItemProps {
   notification: Notification;
   onRead: () => void;
+  isPinned?: boolean;
+  onCollapse?: () => void;
 }
 
-export function NotificationItem({ notification, onRead }: NotificationItemProps) {
+export function NotificationItem({ notification, onRead, isPinned, onCollapse }: NotificationItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   
   const toggleExpand = () => {
     const newState = !isExpanded;
     setIsExpanded(newState);
-    if (newState && !notification.isRead && notification.type !== 'rejected') {
+    if (newState && !notification.isRead && notification.type !== 'rejected' && notification.type !== 'pending') {
       onRead();
+    }
+    if (!newState && isPinned) {
+      onCollapse?.();
     }
   };
   
@@ -28,6 +34,8 @@ export function NotificationItem({ notification, onRead }: NotificationItemProps
         return <CheckCircle className="w-6 h-6 text-success" />;
       case 'rejected':
         return <XCircle className="w-6 h-6 text-destructive" />;
+      case 'pending':
+        return <Clock className="w-6 h-6 text-warning" />;
       default:
         return null;
     }
@@ -45,6 +53,12 @@ export function NotificationItem({ notification, onRead }: NotificationItemProps
         return (
           <Badge variant="destructive">
             На доработке
+          </Badge>
+        );
+      case 'pending':
+        return (
+          <Badge className="bg-warning text-warning-foreground hover:bg-warning/90">
+            На повторной проверке
           </Badge>
         );
       default:
@@ -76,9 +90,11 @@ export function NotificationItem({ notification, onRead }: NotificationItemProps
     <Card 
       onClick={toggleExpand}
       className={`transition-all duration-200 cursor-pointer border-l-4 overflow-hidden
-        ${!notification.isRead 
-          ? 'border-l-primary bg-primary/5 shadow-sm' 
-          : 'border-l-border hover:bg-muted/20'}`}
+        ${isPinned
+          ? 'border-l-success bg-success/5 shadow-sm'
+          : !notification.isRead 
+            ? 'border-l-primary bg-primary/5 shadow-sm' 
+            : 'border-l-border hover:bg-muted/20'}`}
     >
       <div className="p-5 flex gap-4 items-start">
         <div className="flex-shrink-0 pt-1">
@@ -112,74 +128,104 @@ export function NotificationItem({ notification, onRead }: NotificationItemProps
           {isExpanded && (
              <div className="pt-4 mt-2 border-t border-border animate-in fade-in zoom-in-95 duration-200 cursor-default" onClick={(e) => e.stopPropagation()}>
                 
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-sm text-muted-foreground mr-1">Проверил:</span>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs bg-primary/10 text-primary ring-2 ring-background border border-border overflow-hidden`}>
-                    {notification.reviewer.avatar && (
-                       <img src={notification.reviewer.avatar} alt={notification.reviewer.name} className="w-full h-full object-cover" />
-                    )}
-                  </div>
-                  <span className="font-medium text-foreground text-sm">{notification.reviewer.name}</span>
-                </div>
-
-                {notification.generalComment && (
-                  <div className="bg-muted/50 rounded-lg p-3 mb-3 border border-border/50">
-                    <div className="flex items-start gap-2">
-                      <MessageSquare className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <span className="text-xs font-medium text-muted-foreground block mb-0.5">Общий комментарий</span>
-                        <p className="text-sm">{notification.generalComment}</p>
+                {(() => {
+                  const hasComments = !!(notification.generalComment || notification.highlightedCode || notification.inlineComment);
+                  
+                  const reviewerBlock = (
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground mr-1">Проверил:</span>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-medium text-xs bg-primary/10 text-primary ring-2 ring-background border border-border overflow-hidden`}>
+                        {notification.reviewer.avatar ? (
+                           <img src={notification.reviewer.avatar} alt={notification.reviewer.name} className="w-full h-full object-cover" />
+                        ) : (
+                           <span>{(notification.reviewer.name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}</span>
+                        )}
                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {(notification.highlightedCode || notification.inlineComment) && (
-                  <div className="bg-destructive/5 rounded-lg p-3 mb-4 border border-destructive/20">
-                    {notification.highlightedCode && (
-                      <div className="mb-2">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <Code className="w-3.5 h-3.5 text-destructive" />
-                            <span className="text-xs font-medium text-destructive">
-                              {notification.startLine && notification.endLine ? (
-                                notification.startLine === notification.endLine 
-                                  ? `Строка ${notification.startLine}`
-                                  : `Строки ${notification.startLine}-${notification.endLine}`
-                              ) : 'Выделенный код'}
-                            </span>
-                          </div>
-                          <div className="relative">
-                            <pre className="text-xs font-mono bg-background/80 block p-3 rounded-md border border-destructive/10 text-foreground overflow-x-auto whitespace-pre-wrap">
-                              {notification.highlightedCode}
-                            </pre>
-                          </div>
-                      </div>
-                    )}
-                    {notification.inlineComment && (
-                      <div className="flex items-start gap-2 pt-1">
-                          <MessageSquare className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-destructive-foreground/90">{notification.inlineComment}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex justify-end pt-2">
-                  <Link to={notification.lessonPath}>
-                    <Button
-                      variant={notification.type === 'rejected' ? 'default' : 'outline'}
-                      size="sm"
-                      className={notification.type === 'rejected' ? 'bg-[#4F46E5] hover:bg-[#4338CA] text-white' : ''}
-                    >
-                      {notification.type === 'rejected' ? (
-                        <>Исправить решение</>
-                      ) : (
-                        <>Посмотреть решение</>
+                      <span className="font-medium text-foreground text-sm">{notification.reviewer.name}</span>
+                      {(notification.reviewer as any).telegramUsername && (
+                        <TelegramLink username={(notification.reviewer as any).telegramUsername} className="text-sm" />
                       )}
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </Link>
-                </div>
+                    </div>
+                  );
+
+                  const actionButton = (
+                    <Link to={notification.lessonPath}>
+                      <Button
+                        variant={notification.type === 'rejected' ? 'default' : 'outline'}
+                        size="sm"
+                        className={notification.type === 'rejected' ? 'bg-[#4F46E5] hover:bg-[#4338CA] text-white' : ''}
+                      >
+                        {notification.type === 'rejected' ? (
+                          <>Исправить решение</>
+                        ) : (
+                          <>Посмотреть решение</>
+                        )}
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </Link>
+                  );
+
+                  if (!hasComments) {
+                    return (
+                      <div className="flex items-center justify-between">
+                        {reviewerBlock}
+                        {actionButton}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <div className="mb-4">{reviewerBlock}</div>
+
+                      {notification.generalComment && (
+                        <div className="bg-muted/50 rounded-lg p-3 mb-3 border border-border/50">
+                          <div className="flex items-start gap-2">
+                            <MessageSquare className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <span className="text-xs font-medium text-muted-foreground block mb-0.5">Общий комментарий</span>
+                              <p className="text-sm whitespace-pre-wrap">{notification.generalComment}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {(notification.highlightedCode || notification.inlineComment) && (
+                        <div className="bg-destructive/5 rounded-lg p-3 mb-4 border border-destructive/20">
+                          {notification.highlightedCode && (
+                            <div className="mb-2">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <Code className="w-3.5 h-3.5 text-destructive" />
+                                  <span className="text-xs font-medium text-destructive">
+                                    {notification.startLine && notification.endLine ? (
+                                      notification.startLine === notification.endLine 
+                                        ? `Строка ${notification.startLine}`
+                                        : `Строки ${notification.startLine}-${notification.endLine}`
+                                    ) : 'Выделенный код'}
+                                  </span>
+                                </div>
+                                <div className="relative">
+                                  <pre className="text-xs font-mono bg-background/80 block p-3 rounded-md border border-destructive/10 text-foreground overflow-x-auto whitespace-pre-wrap">
+                                    {notification.highlightedCode}
+                                  </pre>
+                                </div>
+                            </div>
+                          )}
+                          {notification.inlineComment && (
+                            <div className="flex items-start gap-2 pt-1">
+                                <MessageSquare className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+                                <p className="text-sm text-destructive-foreground/90 whitespace-pre-wrap">{notification.inlineComment}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex justify-end pt-2">
+                        {actionButton}
+                      </div>
+                    </>
+                  );
+                })()}
              </div>
           )}
         </div>

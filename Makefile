@@ -1,10 +1,10 @@
-.PHONY: build up down logs migrate createsuperuser app-shell db-shell
+.PHONY: build up down logs migrate createsuperuser app-shell db-shell seed seed-local seed-lessons seed-lessons-local seed-demo seed-demo-local
 
 build:
 	docker-compose build
 
 up:
-	docker-compose up -d
+	docker-compose up -d -V
 
 down:
 	docker-compose down
@@ -33,8 +33,38 @@ test-back:
 test-back-local:
 	cd backend && python -m pytest
 
+seed:
+	docker-compose exec app python manage.py seed_modules
+
+seed-local:
+	cd backend && python manage.py seed_modules
+
+seed-all:
+	docker-compose exec app python manage.py seed_modules
+	docker-compose exec app python manage.py seed_lessons
+
+seed-all-local:
+	cd backend && python manage.py seed_modules
+	cd backend && python manage.py seed_lessons
+
+seed-lessons:
+	docker-compose exec app python manage.py seed_lessons
+
+seed-lessons-local:
+	cd backend && python manage.py seed_lessons
+
+seed-demo:
+	docker-compose exec app python manage.py seed_demo_submissions
+
+seed-demo-local:
+	cd backend && python manage.py seed_demo_submissions
+
 check-front:
 	cd frontend && npm run lint && npm run type-check
 
 lint-front:
+	cd frontend && npm run lint
+
+test-all:
+	cd backend && python -m pytest
 	cd frontend && npm run lint

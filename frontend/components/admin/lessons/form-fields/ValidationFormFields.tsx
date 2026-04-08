@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Trash2, Code, ListChecks } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { useEffect, useRef } from 'react';
 
 export interface BaseCheck {
   id: string;
@@ -43,6 +44,18 @@ export function ValidationFormFields<TCheck extends BaseCheck, TConfig extends B
   codeHelperText,
   codeLabel
 }: ValidationFormFieldsProps<TCheck, TConfig>) {
+
+  const didNormalize = useRef(false);
+  useEffect(() => {
+    if (didNormalize.current) return;
+    const checks = config.checks || [];
+    const needsIds = checks.some(c => !c.id);
+    if (needsIds) {
+      didNormalize.current = true;
+      const fixed = checks.map(c => c.id ? c : { ...c, id: crypto.randomUUID() });
+      onConfigChange({ ...config, checks: fixed } as TConfig);
+    }
+  }, [config, onConfigChange]);
 
   const updateConfig = (updates: Partial<TConfig>) => {
     onConfigChange({ ...config, ...updates });
@@ -143,8 +156,8 @@ export function ValidationFormFields<TCheck extends BaseCheck, TConfig extends B
               </div>
             ) : (
               <div className="space-y-3">
-                {(config.checks || []).map((check) => (
-                  <Card key={check.id} className="p-4 relative group">
+                {(config.checks || []).map((check, idx) => (
+                  <Card key={check.id || `check-${idx}`} className="p-4 relative group">
                     <div className="flex gap-4 items-start">
                       <div className="flex-1 grid gap-4">
                         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto] gap-4 items-start">

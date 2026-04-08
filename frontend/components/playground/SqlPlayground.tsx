@@ -45,9 +45,9 @@ export default function SqlPlayground() {
   };
 
   return (
-    <div className="h-full border rounded-xl overflow-hidden bg-card shadow-sm min-h-[600px]">
+    <div className="h-full border rounded-xl overflow-hidden bg-card shadow-sm">
       <ResizablePanelGroup direction="horizontal" className="h-full">
-        <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-muted/10 border-r">
+        <ResizablePanel defaultSize={20} minSize={20} maxSize={35} className="bg-muted/10 border-r">
           <div className="flex flex-col h-full">
             <div className="p-4 border-b bg-muted/20">
               <h3 className="font-semibold flex items-center gap-2">
@@ -101,6 +101,7 @@ export default function SqlPlayground() {
         <ResizableHandle />
 
         <ResizablePanel defaultSize={80}>
+
           <SqlEditorPanel
             sqlCode={sqlCode}
             setSqlCode={setSqlCode}

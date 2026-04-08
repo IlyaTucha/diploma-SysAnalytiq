@@ -10,6 +10,7 @@ class ModuleSchema(Schema):
     description: str
     color: str
     icon: str
+    published: bool
 
 
 class LessonSchema(Schema):
@@ -21,6 +22,8 @@ class LessonSchema(Schema):
     slug: str
     content: str
     initial_code: Optional[str] = None
+    correct_answer: Optional[str] = None
+    hint: Optional[str] = None
     published: bool
 
     @staticmethod
@@ -54,4 +57,14 @@ class LessonUpdateSchema(Schema):
     correct_answer: Optional[str] = None
     hint: Optional[str] = None
     published: Optional[bool] = None
+
+
+class ModuleUpdateSchema(Schema):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    published: Optional[bool] = None
+
+
+class LessonReorderSchema(Schema):
+    lesson_ids: List[str]
 

@@ -10,32 +10,58 @@ import {
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
 import { Link, useParams, Navigate } from 'react-router-dom';
-import { BookOpen, Code, Lock, PlayCircle, CheckCircle, Clock, AlertCircle, Edit, ArrowLeft, ArrowRight } from 'lucide-react';
-import { modulesData } from '@/mocks/ModulesMock';
-import { lessonsData } from '@/mocks/LessonsMock';
+import { BookOpen, Code, Lock, PlayCircle, CheckCircle, Clock, AlertCircle, Edit, ArrowLeft, ArrowRight, FileEdit } from 'lucide-react';
+import { useData } from '@/lib/data';
 import { useAuth } from '@/components/contexts/AuthContext';
 import { useProgress } from '@/components/contexts/ProgressContext';
+import { moduleSlugOrder } from '@/const';
 
 export default function LessonListView() {
   const { moduleSlug } = useParams();
-  const { isAdmin: _isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const { isLessonCompleted } = useProgress();
+  const { modules: modulesData, lessons: lessonsData, submissions } = useData();
+
+  // Сортируем и фильтруем модули
+  const sortedModules = [...modulesData].sort((a, b) => {
+    const idxA = moduleSlugOrder.indexOf(a.slug);
+    const idxB = moduleSlugOrder.indexOf(b.slug);
+    return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+  });
+  const visibleModules = isAdmin ? sortedModules : sortedModules.filter(m => m.published);
   
   const currentModule = modulesData.find(m => m.slug === moduleSlug);
   const currentModuleId = currentModule?.id || 1;
   const ModuleIcon = currentModule?.icon || BookOpen;
 
-  const currentModuleIndex = modulesData.findIndex(m => m.slug === moduleSlug);
-  const prevModule = currentModuleIndex > 0 ? modulesData[currentModuleIndex - 1] : null;
-  const nextModule = currentModuleIndex < modulesData.length - 1 ? modulesData[currentModuleIndex + 1] : null;
+  const currentModuleIndex = visibleModules.findIndex(m => m.slug === moduleSlug);
+  const prevModule = currentModuleIndex > 0 ? visibleModules[currentModuleIndex - 1] : null;
+  const nextModule = currentModuleIndex < visibleModules.length - 1 ? visibleModules[currentModuleIndex + 1] : null;
 
   const lessons = lessonsData
-    .filter(l => l.moduleId === currentModuleId)
-    .map(l => ({
-      ...l,
-      status: isLessonCompleted(l.id) ? 'completed' : 'current',
-      path: `/modules/${moduleSlug}/${l.id}`
-    })); 
+    .filter(l => l.moduleId === currentModuleId && (l.published || isAdmin))
+    .map(l => {
+      let status: string = 'current';
+      const lessonSubs = submissions.filter(s => s.lessonId === l.id);
+      if (lessonSubs.length > 0) {
+        const latest = lessonSubs[lessonSubs.length - 1];
+        if (latest.status === 'approved') {
+          status = 'completed';
+        } else if (latest.status === 'pending') {
+          // Если есть группа — показываем pending, иначе — completed
+          status = (user?.groupId && !isAdmin) ? 'pending_review' : 'completed';
+        } else if (latest.status === 'rejected') {
+          status = 'needs_revision';
+        }
+      } else if (isLessonCompleted(l.id)) {
+        status = 'completed';
+      }
+      return {
+        ...l,
+        status,
+        path: `/modules/${moduleSlug}/${l.id}`
+      };
+    }); 
 
   if (!currentModule) {
     return <Navigate to="/" replace />;
@@ -65,7 +91,7 @@ export default function LessonListView() {
 
   return (
     <div className="flex-1 p-4 md:p-8 flex flex-col h-full">
-      <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col">
+      <div className="w-full flex-1 flex flex-col">
           <Breadcrumb className="mb-6">
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -156,6 +182,12 @@ export default function LessonListView() {
                             {lesson.type === 'theory' ? 'Теория' : 'Практика'}
                           </span>
                         </Badge>
+                        {!lesson.published && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <FileEdit className="w-3 h-3" />
+                            Черновик
+                          </Badge>
+                        )}
                       </div>
                       <h3 className="mb-2">{lesson.title}</h3>
                       <div className="flex items-center gap-4">

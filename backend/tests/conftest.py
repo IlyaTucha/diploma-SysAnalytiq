@@ -16,9 +16,10 @@ def user_client(db):
     from app.internal.app import api
     
     user = User.objects.create_user(
-        username="student@example.com",
-        email="student@example.com",
-        password="password123"
+        username="test_student",
+        password="password123",
+        telegram_id=100000001,
+        telegram_username="test_student",
     )
     client = TestClient(api)
     
@@ -43,9 +44,10 @@ def admin_client(db):
     from app.internal.app import api
     
     user = User.objects.create_superuser(
-        username="admin@example.com",
-        email="admin@example.com",
-        password="password123"
+        username="test_admin",
+        password="password123",
+        telegram_id=100000002,
+        telegram_username="test_admin",
     )
     client = TestClient(api)
     token = str(RefreshToken.for_user(user).access_token)

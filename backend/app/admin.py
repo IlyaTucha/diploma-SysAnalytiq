@@ -8,14 +8,16 @@ from app.internal.progress.db.models import Progress
 
 # Users
 @admin.register(User)
-
 class UserAdmin(BaseUserAdmin):
-    fieldsets = BaseUserAdmin.fieldsets + (
-        ('Profile', {'fields': ('avatar', 'group', 'name')}),
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Личные данные', {'fields': ('first_name', 'last_name', 'name', 'avatar_url', 'group')}),
+        ('Telegram', {'fields': ('telegram_id', 'telegram_username', 'telegram_notifications')}),
+        ('Права доступа', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Важные даты', {'fields': ('last_login', 'date_joined')}),
     )
-    list_display = ('email', 'username', 'is_staff', 'group')
-
-    ordering = ('email',)
+    list_display = ('username', 'telegram_username', 'first_name', 'last_name', 'is_staff', 'group')
+    ordering = ('username',)
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):

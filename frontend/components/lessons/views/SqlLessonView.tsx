@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import { toast } from "sonner";
 import { SqlEditorPanel } from '@/components/editors/sql/SqlEditorPanel';
 import { LessonLayout } from '@/components/layouts/LessonLayout';
@@ -35,6 +35,14 @@ export function SqlLessonView({ lesson }: SqlLessonViewProps) {
   const [validationState, setValidationState] = useState<'idle' | 'success' | 'error'>('idle');
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const editorRef = useRef<any>(null);
+
+  // Сбрасываем локальное состояние при переключении задания
+  const lessonId = lesson?.id;
+  React.useEffect(() => {
+    setResult(null);
+    setValidationState('idle');
+    setValidationMessage(null);
+  }, [lessonId]);
 
   const handleEditorDidMount: OnMount = (editor, _monaco) => {
     editorRef.current = editor;
@@ -128,13 +136,14 @@ export function SqlLessonView({ lesson }: SqlLessonViewProps) {
       onCheck={handleCheck}
       hint={content.hint}
       checkButtonText="Проверить решение"
+      submissionExtra={{ executionResult: result }}
       backLink={prevLink}
       nextLink={nextLink}
       backLabel={prevLabel}
       nextLabel={nextLabel}
       renderEditor={(code, setCode) => (
         <ResizablePanelGroup direction="horizontal" className="h-full">
-          <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-muted/10 border-r hidden md:block">
+          <ResizablePanel defaultSize={20} minSize={18} maxSize={30} className="bg-muted/10 border-r hidden md:block">
             <div className="flex flex-col h-full">
               <div className="p-3 border-b bg-muted/20">
                 <h3 className="font-semibold text-xs flex items-center gap-2">

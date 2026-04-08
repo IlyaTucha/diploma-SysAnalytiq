@@ -5,4 +5,5 @@ export interface Module {
   description: string;
   color: string;
   icon: any;
+  published: boolean;
 }

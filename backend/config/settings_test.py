@@ -6,3 +6,6 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# Disable Telegram hash verification in tests
+TELEGRAM_BOT_TOKEN = ''

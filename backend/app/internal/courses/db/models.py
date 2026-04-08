@@ -7,6 +7,7 @@ class Module(models.Model):
     description = models.TextField(blank=True)
     color = models.CharField(max_length=50, blank=True)
     icon = models.CharField(max_length=100, blank=True, help_text="Icon name or URL")
+    published = models.BooleanField(default=True)
     
     def __str__(self):
         return self.title

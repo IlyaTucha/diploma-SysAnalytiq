@@ -3,6 +3,7 @@ import { ThemeProvider } from '@/components/contexts/ThemeProvider';
 import { AuthProvider, useAuth } from '@/components/contexts/AuthContext';
 import { ProgressProvider } from '@/components/contexts/ProgressContext';
 import { NotificationProvider } from '@/components/contexts/NotificationContext';
+import { DataProvider } from '@/lib/data';
 import { ProtectedRoute } from '@/components/guards/ProtectedRoute';
 import { AdminRoute } from '@/components/guards/AdminRoute';
 import { Toaster } from '@/components/ui/sonner';
@@ -18,6 +19,7 @@ import AdminModules from '@/pages/admin/AdminModulesPage';
 import AdminModuleContent from '@/pages/admin/AdminModuleContentPage';
 import AdminReviews from '@/pages/admin/AdminReviewsPage';
 import { AdminGroupsPage } from '@/pages/admin/AdminGroupsPage';
+import JoinGroupPage from '@/pages/groups/JoinGroupPage';
 
 function HomeRedirect() {
   const { isAdmin } = useAuth();
@@ -33,7 +35,8 @@ export default function App() {
       <AuthProvider>
         <NotificationProvider>
           <ProgressProvider>
-            <Router>
+            <DataProvider>
+            <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <Routes>
               <Route path="/login" element={<LoginPage />} />
               
@@ -56,11 +59,13 @@ export default function App() {
               </Route>
 
               <Route path="/modules/:moduleSlug/:lessonId" element={<ProtectedRoute><LessonPage /></ProtectedRoute>} />
+              <Route path="/join/:inviteCode" element={<ProtectedRoute><JoinGroupPage /></ProtectedRoute>} />
               
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <Toaster />
           </Router>
+        </DataProvider>
         </ProgressProvider>
         </NotificationProvider>
       </AuthProvider>

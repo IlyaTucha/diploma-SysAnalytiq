@@ -19,6 +19,14 @@ interface GroupListProps {
 }
 
 export function GroupList({ groups, getGroupUsers, onShare, onEdit }: GroupListProps) {
+  if (groups.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-8">
+        В данный момент не создано ни одной группы.
+      </div>
+    );
+  }
+
   return (
     <Table>
       <TableHeader>

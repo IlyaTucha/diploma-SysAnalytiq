@@ -32,3 +32,5 @@ export const moduleOrder = [
   MODULE_NAMES.PLANTUML,
   MODULE_NAMES.SWAGGER
 ];
+
+export const moduleSlugOrder = ['sql', 'er', 'erd', 'bpmn', 'plantuml', 'swagger'];

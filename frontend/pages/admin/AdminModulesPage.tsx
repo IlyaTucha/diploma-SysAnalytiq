@@ -1,29 +1,38 @@
 import { useState } from 'react';
-import { BookOpen } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { toast } from "sonner";
-import { modulesData } from '@/mocks/ModulesMock';
-import { lessonsData } from '@/mocks/LessonsMock';
+import { useData } from '@/lib/data';
+import { modulesApi } from '@/lib/api';
 import { useTheme } from '@/components/contexts/ThemeProvider';
+import { moduleSlugOrder } from '@/const';
 import { ModuleEditForm } from '@/components/admin/modules/ModuleEditForm';
 import { ModuleList } from '@/components/admin/modules/ModuleList';
 
 export default function AdminModules() {
   const { getThemeColor } = useTheme();
+  const { modules: modulesData, lessons: lessonsData } = useData();
   const [editingId, setEditingId] = useState<number | null>(null);
   
-  const [modules, setModules] = useState(modulesData.map(m => {
-    const lessonCount = lessonsData.filter(l => l.moduleId === m.id).length;
-    return {
-      id: m.id,
-      title: m.title,
-      slug: m.slug,
-      description: m.description,
-      lessons: lessonCount,
-      published: true,
-      color: m.color,
-      icon: m.icon,
-    };
-  }));
+  const [modules, setModules] = useState(() => {
+    const mapped = modulesData.map(m => {
+      const lessonCount = lessonsData.filter(l => l.moduleId === m.id).length;
+      return {
+        id: m.id,
+        title: m.title,
+        slug: m.slug,
+        description: m.description,
+        lessons: lessonCount,
+        published: m.published ?? true,
+        color: m.color,
+        icon: m.icon,
+      };
+    });
+    return [...mapped].sort((a, b) => {
+      const idxA = moduleSlugOrder.indexOf(a.slug);
+      const idxB = moduleSlugOrder.indexOf(b.slug);
+      return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+    });
+  });
 
   const [formData, setFormData] = useState({
     title: '',
@@ -48,20 +57,32 @@ export default function AdminModules() {
     }
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!formData.title || !formData.description) {
       toast.error('Заполните все поля');
       return;
     }
 
-    setModules(modules.map(m => 
-      m.id === editingId
-        ? { ...m, title: formData.title, slug: formData.slug, description: formData.description, published: formData.published }
-        : m
-    ));
-    setFormData({ title: '', slug: '', description: '', published: false });
-    setEditingId(null);
-    toast.success('Модуль обновлен!');
+    const module = modules.find(m => m.id === editingId);
+    if (!module) return;
+
+    try {
+      await modulesApi.update(module.slug, {
+        title: formData.title,
+        description: formData.description,
+        published: formData.published,
+      });
+      setModules(modules.map(m => 
+        m.id === editingId
+          ? { ...m, title: formData.title, slug: formData.slug, description: formData.description, published: formData.published }
+          : m
+      ));
+      setFormData({ title: '', slug: '', description: '', published: false });
+      setEditingId(null);
+      toast.success('Модуль обновлен!');
+    } catch {
+      toast.error('Ошибка при обновлении модуля');
+    }
   };
 
   const resetForm = () => {
@@ -71,20 +92,17 @@ export default function AdminModules() {
   return (
     <div className="flex-1 flex flex-col">
       <div className="bg-card border-b border-border p-6">
-          <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-3">
-                  <BookOpen className="w-8 h-8" style={{ color: getThemeColor('#4F46E5') }} />
+                  <Shield className="w-8 h-8" style={{ color: getThemeColor('#4F46E5') }} />
                   <h1>Управление модулями</h1>
                 </div>
               </div>
             </div>
-          </div>
         </div>
 
         <div className="flex-1 p-4 md:p-8">
-          <div className="max-w-7xl mx-auto">
           {editingId && (
             <ModuleEditForm
               formData={formData}
@@ -100,7 +118,6 @@ export default function AdminModules() {
             editingId={editingId}
             handleEdit={handleEdit}
           />
-        </div>
         </div>
     </div>
   );

@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from "sonner";
-import { groupsData } from '@/mocks/GroupsMock';
-import { usersData } from '@/mocks/UsersMock';
 import { Group } from '@/types/group';
 import { User } from '@/types/user';
+import { groupsApi } from '@/lib/api';
 import {
   Card,
   CardContent,
@@ -19,8 +18,8 @@ import { ConfirmDialog } from '@/components/admin/groups/ConfirmDialog';
 
 export const AdminGroupsPage = () => {
   const { getThemeColor } = useTheme();
-  const [groups, setGroups] = useState<Group[]>(groupsData);
-  const [users, setUsers] = useState<User[]>(usersData);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -30,19 +29,36 @@ export const AdminGroupsPage = () => {
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-  const handleCreateGroup = (name: string) => {
-    const newGroup: Group = {
-      id: Date.now().toString(),
-      name: name,
-    };
+  useEffect(() => {
+    groupsApi.list()
+      .then(data => {
+        setGroups(data as unknown as Group[]);
+        const allMembers: User[] = [];
+        Promise.all(
+          (data as any[]).map(g =>
+            groupsApi.members(g.id).then(members => {
+              allMembers.push(...(members as unknown as User[]));
+            }).catch(() => {})
+          )
+        ).then(() => setUsers(allMembers));
+      })
+      .catch(() => {});
+  }, []);
 
-    setGroups(prev => [...prev, newGroup]);
-    setIsDialogOpen(false);
-    toast.success(`Группа ${name} успешно создана`);
+  const handleCreateGroup = (name: string, password: string) => {
+    groupsApi.create(name, password)
+      .then(newGroup => {
+        setGroups(prev => [...prev, newGroup as unknown as Group]);
+        setIsDialogOpen(false);
+        toast.success(`Группа ${name} успешно создана`);
+      })
+      .catch((err) => toast.error(err?.message || 'Ошибка создания группы'));
   };
 
   const handleShareGroup = (groupName: string) => {
-    const link = `${window.location.origin}/join/${groupName}`;
+    const group = groups.find(g => g.name === groupName);
+    const code = group?.inviteCode || groupName;
+    const link = `${window.location.origin}/join/${code}`;
     navigator.clipboard.writeText(link);
     toast.success('Ссылка-приглашение скопирована в буфер обмена');
   };
@@ -57,35 +73,34 @@ export const AdminGroupsPage = () => {
     setIsUserDeleteDialogOpen(true);
   };
 
-  const handleConfirmDeleteUser = () => {
-    if (!userToDelete) return;
+  const handleConfirmDeleteUser = async () => {
+    if (!userToDelete || !editingGroup) return;
 
-    setUsers(prev => prev.filter(u => u.email !== userToDelete.email));
-    
-    if (editingGroup) {
-        setGroups(prev => prev.map(g => {
-            if (g.id === editingGroup.id) {
-                return { ...g };
-            }
-            return g;
-        }));
+    try {
+      await groupsApi.kick(editingGroup.id, userToDelete.id);
+      setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+      setIsUserDeleteDialogOpen(false);
+      setUserToDelete(null);
+      toast.success('Студент удален из группы');
+    } catch {
+      toast.error('Ошибка при исключении студента');
     }
-    
-    setIsUserDeleteDialogOpen(false);
-    setUserToDelete(null);
-    toast.success('Студент удален из группы');
   };
 
-  const handleDeleteGroup = () => {
+  const handleDeleteGroup = async () => {
     if (!editingGroup) return;
     
-    setGroups(prev => prev.filter(g => g.id !== editingGroup.id));
-    setUsers(prev => prev.filter(u => u.groupId !== editingGroup.id));
-    
-    setIsDeleteDialogOpen(false);
-    setIsEditOpen(false);
-    setEditingGroup(null);
-    toast.success('Группа успешно удалена');
+    try {
+      await groupsApi.delete(editingGroup.id);
+      setGroups(prev => prev.filter(g => g.id !== editingGroup.id));
+      setUsers(prev => prev.filter(u => u.groupId !== editingGroup.id));
+      setIsDeleteDialogOpen(false);
+      setIsEditOpen(false);
+      setEditingGroup(null);
+      toast.success('Группа успешно удалена');
+    } catch {
+      toast.error('Ошибка при удалении группы');
+    }
   };
 
   const getGroupUsers = (groupId: string) => {
@@ -95,19 +110,17 @@ export const AdminGroupsPage = () => {
   return (
     <div className="flex-1 flex flex-col">
       <div className="bg-card border-b border-border p-6">
-        <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
             <Users className="w-8 h-8" style={{ color: getThemeColor('#4F46E5') }} />
             <h1>Учебные группы</h1>
           </div>
-        </div>
       </div>
 
       <div className="flex-1 p-4 md:p-8">
-        <div className="space-y-6 w-full">
+        <div className="space-y-4 w-full">
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-row items-center justify-between py-4">
                 <CardTitle>Список групп</CardTitle>
               <CreateGroupDialog 
                 isOpen={isDialogOpen}
@@ -134,6 +147,10 @@ export const AdminGroupsPage = () => {
         onOpenChange={setIsEditOpen}
         onRemoveUser={handleRequestDeleteUser}
         onDeleteGroup={() => setIsDeleteDialogOpen(true)}
+        onGroupUpdated={(updated) => {
+          setGroups(prev => prev.map(g => g.id === updated.id ? updated : g));
+          setEditingGroup(updated);
+        }}
       />
       
       <ConfirmDialog 

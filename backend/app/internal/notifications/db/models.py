@@ -7,7 +7,7 @@ class Notification(models.Model):
     TYPE_CHOICES = [
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
-        ('info', 'Info'),
+        ('pending', 'Pending Review'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -24,5 +24,10 @@ class Notification(models.Model):
     lesson_title = models.CharField(max_length=255, blank=True)
     lesson_path = models.CharField(max_length=255, blank=True)
 
+    highlighted_code = models.TextField(blank=True, default='')
+    inline_comment = models.TextField(blank=True, default='')
+    start_line = models.IntegerField(null=True, blank=True)
+    end_line = models.IntegerField(null=True, blank=True)
+
     def __str__(self):
-        return f"{self.user.email} - {self.type}"
+        return f"{self.user} - {self.type}"

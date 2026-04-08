@@ -3,10 +3,11 @@ FROM node:20-alpine as frontend
 
 WORKDIR /app/frontend
 
-COPY frontend/package.json frontend/package.json
-RUN npm install
+COPY package*.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
 
-COPY frontend/ .
+COPY . .
 
 EXPOSE 5173
 

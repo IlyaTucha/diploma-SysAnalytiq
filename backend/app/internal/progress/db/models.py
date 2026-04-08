@@ -12,4 +12,4 @@ class Progress(models.Model):
         unique_together = ('user', 'lesson')
 
     def __str__(self):
-        return f"{self.user.email} - {self.lesson.title}"
+        return f"{self.user} - {self.lesson.title}"

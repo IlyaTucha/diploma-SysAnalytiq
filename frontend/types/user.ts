@@ -1,9 +1,12 @@
 export interface User {
   id: string;
   name: string;
-  email: string;
+  firstName: string;
+  lastName: string;
+  telegramUsername: string;
+  telegramNotifications: boolean;
   avatar?: string;
   isAdmin: boolean;
-  phone?: string;
   groupId?: string;
+  groupName?: string;
 }

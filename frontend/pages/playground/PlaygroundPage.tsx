@@ -13,18 +13,16 @@ export default function PlaygroundPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="bg-card border-b border-border p-6">
-          <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-3">
               <Code className="w-8 h-8" style={{ color: getThemeColor('#4F46E5') }} />
               <h1>Песочница</h1>
             </div>
-          </div>
         </div>
 
-        <div className="flex-1 p-6 h-full overflow-hidden">
+        <div className="flex-1 p-6 min-h-0 overflow-hidden">
           <div className="w-full mx-auto h-full">
             <Tabs defaultValue="sql" className="w-full h-full flex flex-col">
-              <TabsList className="mb-6 flex-shrink-0 dark:bg-zinc-900 dark:text-zinc-400">
+              <TabsList className="mb-6 flex-shrink-0 dark:bg-zinc-900 dark:text-zinc-400 overflow-x-auto w-full justify-start">
                 <TabsTrigger value="sql" className="flex items-center gap-2">
                   <Database className="w-4 h-4" />
                   SQL Playground
@@ -47,23 +45,23 @@ export default function PlaygroundPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="sql" className="flex-1 h-full">
+              <TabsContent value="sql" className="flex-1 min-h-0 overflow-hidden">
                 <SqlPlayground />
               </TabsContent>
 
-              <TabsContent value="erd" className="space-y-6">
+              <TabsContent value="erd" className="flex-1 min-h-0 overflow-hidden">
                 <ErdPlayground />
               </TabsContent>
 
-              <TabsContent value="bpmn" className="space-y-6">
+              <TabsContent value="bpmn" className="flex-1 min-h-0 overflow-hidden">
                 <BpmnPlayground />
               </TabsContent>
 
-              <TabsContent value="plantuml" className="space-y-6">
+              <TabsContent value="plantuml" className="flex-1 min-h-0 overflow-hidden">
                 <PlantUmlPlayground />
               </TabsContent>
 
-              <TabsContent value="swagger" className="space-y-6">
+              <TabsContent value="swagger" className="flex-1 min-h-0 overflow-hidden">
                 <SwaggerPlayground />
               </TabsContent>
             </Tabs>
