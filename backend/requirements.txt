@@ -11,6 +11,7 @@ Pillow
 requests
 pytest
 pytest-django
+gunicorn
 
 
 

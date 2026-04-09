@@ -75,8 +75,6 @@ async function apiFetch<T>(
     const token = getAccessToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-    } else {
-      throw new Error('Not authenticated');
     }
   }
 

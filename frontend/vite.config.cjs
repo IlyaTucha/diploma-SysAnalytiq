@@ -9,8 +9,13 @@ module.exports = defineConfig({
         monacoEditorPlugin({})
     ],
     server: {
-        host: '127.0.0.1',
+        host: '0.0.0.0',
         port: 5173,
+        allowedHosts: [
+            'sysanalytiq.ru',
+            'www.sysanalytiq.ru',
+            'localhost',
+        ],
         proxy: {
             '/api': {
                 target: 'http://app:8000',
@@ -18,6 +23,7 @@ module.exports = defineConfig({
             },
         },
         hmr: {
+            clientPort: 443,
             overlay: false,
         },
     },

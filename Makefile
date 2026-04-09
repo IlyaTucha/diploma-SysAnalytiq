@@ -12,6 +12,20 @@ down:
 logs:
 	docker-compose logs -f
 
+
+
+build-prod:
+	docker-compose -f docker-compose.prod.yml build
+
+up-prod:
+	docker-compose -f docker-compose.prod.yml up -d -V
+
+down-prod:
+	docker-compose -f docker-compose.prod.yml down
+
+logs-prod:
+	docker-compose -f docker-compose.prod.yml logs -f
+
 migrate:
 	docker-compose exec app python manage.py migrate
 
