@@ -130,9 +130,9 @@ export const authApi = {
 };
 
 export const modulesApi = {
-  list: () => apiFetch<any[]>('/modules', {}, true),
-  get: (slug: string) => apiFetch<any>(`/modules/${slug}`, {}, true),
-  lessons: (slug: string) => apiFetch<any[]>(`/modules/${slug}/lessons`, {}, true),
+    list: () => apiFetch<any[]>('/modules'),
+    get: (slug: string) => apiFetch<any>(`/modules/${slug}`),
+    lessons: (slug: string) => apiFetch<any[]>(`/modules/${slug}/lessons`),
   update: (slug: string, data: any) =>
     apiFetch<any>(`/modules/${slug}`, {
       method: 'PUT',
@@ -141,7 +141,7 @@ export const modulesApi = {
 };
 
 export const lessonsApi = {
-  get: (slug: string) => apiFetch<any>(`/lessons/${slug}`, {}, true),
+  get: (slug: string) => apiFetch<any>(`/lessons/${slug}`),
   create: (data: any) =>
     apiFetch<any>('/lessons', {
       method: 'POST',
