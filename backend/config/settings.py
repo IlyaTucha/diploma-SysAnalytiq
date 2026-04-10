@@ -31,6 +31,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -84,15 +85,20 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'app.User'
 
 _site_url = os.environ.get('SITE_URL', 'http://127.0.0.1')
 CORS_ALLOWED_ORIGINS = [_site_url]
+CSRF_TRUSTED_ORIGINS = [_site_url]
 _extra_origins = os.environ.get('CORS_EXTRA_ORIGINS', '')
 if _extra_origins:
-    CORS_ALLOWED_ORIGINS += [o.strip() for o in _extra_origins.split(',') if o.strip()]
+    extras = [o.strip() for o in _extra_origins.split(',') if o.strip()]
+    CORS_ALLOWED_ORIGINS += extras
+    CSRF_TRUSTED_ORIGINS += extras
 if DEBUG:
     CORS_ALLOWED_ORIGINS += [
         'http://localhost:5173',
