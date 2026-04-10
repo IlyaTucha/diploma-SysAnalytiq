@@ -4,6 +4,7 @@ services:
   db:
     image: postgres:15
     container_name: diploma_db
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-diploma}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -22,6 +23,7 @@ services:
     build: .
     command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
     container_name: diploma_backend
+    restart: unless-stopped
     ports:
       - "8000:8000"
     env_file:
@@ -37,6 +39,7 @@ services:
       args:
         - VITE_API_URL=${VITE_API_URL:-http://127.0.0.1:8000/api}
     container_name: diploma_frontend
+    restart: unless-stopped
     ports:
       - "5173:80"
     env_file:
