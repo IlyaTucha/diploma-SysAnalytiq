@@ -5,7 +5,7 @@ from app.internal.app import api
 
 urlpatterns = [
     path('', lambda request: redirect('/api/docs')),
-    path('admin/', admin.site.urls),
+    path('sys-admin/', admin.site.urls),
     path('api/', api.urls),
 ]
 
