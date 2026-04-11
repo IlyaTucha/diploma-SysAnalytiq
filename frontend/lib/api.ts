@@ -140,6 +140,24 @@ export const modulesApi = {
 
 export const lessonsApi = {
   get: (slug: string) => apiFetch<any>(`/lessons/${slug}`),
+  getValidationConfig: async (slug: string) => {
+    const rawData = await apiFetch<any>(`/lessons/${slug}/validation-config`);
+    if (rawData && rawData.payload) {
+      try {
+        const key = 'SysAnalytiqSecretKey2026';
+        const decoded = atob(rawData.payload);
+        const bytes = new Uint8Array(decoded.length);
+        for (let i = 0; i < decoded.length; i++) {
+          bytes[i] = decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+        }
+        return JSON.parse(new TextDecoder().decode(bytes));
+      } catch (e) {
+        console.error("Failed to decode validation config", e);
+        return rawData;
+      }
+    }
+    return rawData;
+  },
   create: (data: any) =>
     apiFetch<any>('/lessons', {
       method: 'POST',

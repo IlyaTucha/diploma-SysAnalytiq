@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { mockDatasets, schemaMetadata } from '@/mocks/SqlMock';
+import { lessonsApi } from '@/lib/api';
 
 interface SqlLessonViewProps {
   lesson: any;
@@ -86,11 +87,10 @@ export function SqlLessonView({ lesson }: SqlLessonViewProps) {
     
     try {
       // Получить конфигурацию валидации из API
-      const response = await fetch(`/api/lessons/${lesson.slug}/validation-config`);
-      if (!response.ok) {
+      const validationData = await lessonsApi.getValidationConfig(lesson.slug);
+      if (!validationData) {
         throw new Error('Failed to fetch validation config');
       }
-      const validationData = await response.json();
       const config = validationData.config || { mode: 'code', code: '' };
 
       const studentResult = executeQuery(code);

@@ -4,6 +4,7 @@ import { PlantUmlEditorPanel } from '@/components/editors/plantuml/PlantUmlEdito
 import { LessonLayout } from '@/components/layouts/LessonLayout';
 import { useLessonNavigation } from '../UseLessonNavigation';
 import { checkValue, getOperatorText } from '@/components/ui/operator-selector';
+import { lessonsApi } from '@/lib/api';
 
 interface PlantUmlLessonViewProps {
   lesson: any;
@@ -28,11 +29,10 @@ export function PlantUmlLessonView({ lesson }: PlantUmlLessonViewProps) {
     
     try {
       // Fetch validation config from API
-      const response = await fetch(`/api/lessons/${lesson.slug}/validation-config`);
-      if (!response.ok) {
+      const validationData = await lessonsApi.getValidationConfig(lesson.slug);
+      if (!validationData) {
         throw new Error('Ошибка получения конфигурации валидации');
       }
-      const validationData = await response.json();
       const config = validationData.config || { mode: 'code', code: '' };
 
       // Базовая проверка PlantUML

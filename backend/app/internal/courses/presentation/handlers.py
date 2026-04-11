@@ -98,11 +98,20 @@ def get_lesson_validation_config(request, slug: str):
     except json.JSONDecodeError:
         config = {"mode": "code", "code": lesson.correct_answer or ""}
     
-    return {
+    data = {
         "config": config,
         "lessonType": lesson.type,
         "lessonSlug": slug
     }
+    
+    import base64
+    json_str = json.dumps(data).encode('utf-8')
+    key = b'SysAnalytiqSecretKey2026'
+    obfuscated = bytearray(len(json_str))
+    for i, b in enumerate(json_str):
+        obfuscated[i] = b ^ key[i % len(key)]
+    
+    return {"payload": base64.b64encode(obfuscated).decode('utf-8')}
 
 
 def _validate_erd_solution(student_code: str, config: dict) -> dict:

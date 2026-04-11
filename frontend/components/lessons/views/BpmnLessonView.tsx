@@ -4,6 +4,7 @@ import { BpmnEditorPanel } from '@/components/editors/bpmn/BpmnEditorPanel';
 import { LessonLayout } from '@/components/layouts/LessonLayout';
 import { useLessonNavigation } from '../UseLessonNavigation';
 import { checkValue, getOperatorText } from '@/components/ui/operator-selector';
+import { lessonsApi } from '@/lib/api';
 
 interface BpmnLessonViewProps {
   lesson: any;
@@ -27,11 +28,10 @@ export function BpmnLessonView({ lesson }: BpmnLessonViewProps) {
     }
     
     try {
-      const response = await fetch(`/api/lessons/${lesson.slug}/validation-config`);
-      if (!response.ok) {
-        throw new Error('Erreur de validation');
+      const validationData = await lessonsApi.getValidationConfig(lesson.slug);
+      if (!validationData) {
+        throw new Error('Ошибка конфигурации валидации');
       }
-      const validationData = await response.json();
       const config = validationData.config || { mode: 'code', code: '' };
 
       const parser = new DOMParser();

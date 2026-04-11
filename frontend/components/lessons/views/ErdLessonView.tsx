@@ -7,6 +7,7 @@ import { LessonLayout } from '@/components/layouts/LessonLayout';
 import { useLessonNavigation } from '../UseLessonNavigation';
 import { checkValue, getOperatorText } from '@/components/ui/operator-selector';
 import { useData } from '@/lib/data';
+import { lessonsApi } from '@/lib/api';
 
 interface ErdLessonViewProps {
   lesson: any;
@@ -39,11 +40,10 @@ export function ErdLessonView({ lesson }: ErdLessonViewProps) {
     }
     
     try {
-      const response = await fetch(`/api/lessons/${lesson.slug}/validation-config`);
-      if (!response.ok) {
+      const validationData = await lessonsApi.getValidationConfig(lesson.slug);
+      if (!validationData) {
         throw new Error('Failed to fetch validation config');
       }
-      const validationData = await response.json();
       const config = validationData.config || { mode: 'code', code: '' };
 
       const parseDbml = (dbml: string) => {

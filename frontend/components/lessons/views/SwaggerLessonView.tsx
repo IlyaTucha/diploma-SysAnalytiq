@@ -5,6 +5,7 @@ import { LessonLayout } from '@/components/layouts/LessonLayout';
 import { useLessonNavigation } from '../UseLessonNavigation';
 import { checkValue, getOperatorText } from '@/components/ui/operator-selector';
 import yaml from 'js-yaml';
+import { lessonsApi } from '@/lib/api';
 
 interface SwaggerLessonViewProps {
   lesson: any;
@@ -29,11 +30,10 @@ export function SwaggerLessonView({ lesson }: SwaggerLessonViewProps) {
     
     try {
       // Получить конфигурацию валидации из API
-      const response = await fetch(`/api/lessons/${lesson.slug}/validation-config`);
-      if (!response.ok) {
+      const validationData = await lessonsApi.getValidationConfig(lesson.slug);
+      if (!validationData) {
         throw new Error('Ошибка получения конфигурации валидации');
       }
-      const validationData = await response.json();
       const config = validationData.config || { mode: 'code', code: '' };
 
       // Базовая валидация OpenAPI
