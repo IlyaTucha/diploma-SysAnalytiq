@@ -23,6 +23,7 @@ class NotificationSchema(Schema):
     inline_comment: Optional[str] = None
     start_line: Optional[int] = None
     end_line: Optional[int] = None
+    inline_comments: Optional[list] = None
     
     @staticmethod
     def resolve_reviewer(obj):

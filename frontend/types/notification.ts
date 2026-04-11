@@ -12,8 +12,14 @@ export interface Notification {
   generalComment?: string;
   highlightedCode?: string;
   inlineComment?: string;
-  lessonPath: string;
   startLine?: number;
   endLine?: number;
+  inlineComments?: Array<{
+    lineStart: number;
+    lineEnd: number;
+    highlightedText: string;
+    text: string;
+  }>;
+  lessonPath: string;
   isRead: boolean;
 }

@@ -129,7 +129,7 @@ export function NotificationItem({ notification, onRead, isPinned, onCollapse }:
              <div className="pt-4 mt-2 border-t border-border animate-in fade-in zoom-in-95 duration-200 cursor-default" onClick={(e) => e.stopPropagation()}>
                 
                 {(() => {
-                  const hasComments = !!(notification.generalComment || notification.highlightedCode || notification.inlineComment);
+                  const hasComments = !!(notification.generalComment || notification.highlightedCode || notification.inlineComment || (notification.inlineComments && notification.inlineComments.length > 0));
                   
                   const reviewerBlock = (
                     <div className="flex items-center gap-3">
@@ -190,7 +190,37 @@ export function NotificationItem({ notification, onRead, isPinned, onCollapse }:
                         </div>
                       )}
 
-                      {(notification.highlightedCode || notification.inlineComment) && (
+                      {notification.inlineComments && notification.inlineComments.length > 0 ? (
+                        notification.inlineComments.map((comment, index) => (
+                          <div key={index} className="bg-destructive/5 rounded-lg p-3 mb-4 border border-destructive/20">
+                            {comment.highlightedText && (
+                              <div className="mb-2">
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <Code className="w-3.5 h-3.5 text-destructive" />
+                                    <span className="text-xs font-medium text-destructive">
+                                      {comment.lineStart && comment.lineEnd ? (
+                                        comment.lineStart === comment.lineEnd 
+                                          ? `Строка ${comment.lineStart}`
+                                          : `Строки ${comment.lineStart}-${comment.lineEnd}`
+                                      ) : 'Выделенный код'}
+                                    </span>
+                                  </div>
+                                  <div className="relative">
+                                    <pre className="text-xs font-mono bg-background/80 block p-3 rounded-md border border-destructive/10 text-foreground overflow-x-auto whitespace-pre-wrap">
+                                      {comment.highlightedText}
+                                    </pre>
+                                  </div>
+                              </div>
+                            )}
+                            {comment.text && (
+                              <div className="flex items-start gap-2 pt-1">
+                                  <MessageSquare className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+                                  <p className="text-sm text-destructive-foreground/90 whitespace-pre-wrap">{comment.text}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (notification.highlightedCode || notification.inlineComment) && (
                         <div className="bg-destructive/5 rounded-lg p-3 mb-4 border border-destructive/20">
                           {notification.highlightedCode && (
                             <div className="mb-2">

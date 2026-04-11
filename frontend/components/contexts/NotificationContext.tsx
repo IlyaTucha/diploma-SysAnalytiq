@@ -26,6 +26,7 @@ function mapApiNotification(n: any): Notification {
     inlineComment: n.inlineComment || undefined,
     startLine: n.startLine || undefined,
     endLine: n.endLine || undefined,
+    inlineComments: n.inlineComments || undefined,
     lessonPath: n.lessonPath || '',
     isRead: n.isRead,
   };

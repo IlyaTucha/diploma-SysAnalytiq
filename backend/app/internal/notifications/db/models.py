@@ -28,6 +28,7 @@ class Notification(models.Model):
     inline_comment = models.TextField(blank=True, default='')
     start_line = models.IntegerField(null=True, blank=True)
     end_line = models.IntegerField(null=True, blank=True)
+    inline_comments = models.JSONField(default=list, blank=True)
 
     def __str__(self):
         return f"{self.user} - {self.type}"

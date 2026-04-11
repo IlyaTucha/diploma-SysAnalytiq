@@ -59,6 +59,7 @@ class AdminService:
             inline_comment=first_comment['text'] if first_comment else '',
             start_line=first_comment['line_start'] if first_comment else None,
             end_line=first_comment['line_end'] if first_comment else None,
+            inline_comments=inline_comments or [],
         )
 
         # При принятии работы автоматически отмечаем прогресс
