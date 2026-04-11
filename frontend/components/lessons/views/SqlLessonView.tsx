@@ -1,5 +1,5 @@
 ﻿import React, { useState, useRef } from 'react';
-import { toast } from "sonner";
+import { toast as _toast } from "sonner";
 import { SqlEditorPanel } from '@/components/editors/sql/SqlEditorPanel';
 import { LessonLayout } from '@/components/layouts/LessonLayout';
 import { useSqlRunner } from '@/components/editors/sql/hooks/UseSqlRunner';
@@ -81,21 +81,30 @@ export function SqlLessonView({ lesson }: SqlLessonViewProps) {
     setValidationMessage(null);
   };
 
-  const handleCheck = (code: string) => {
+  const handleCheck = async (code: string) => {
     if (!db) return false;
     
-    const studentResult = executeQuery(code);
-    setResult(studentResult);
-    
-    if (!studentResult || !Array.isArray(studentResult)) {
+    try {
+      // Получить конфигурацию валидации из API
+      const response = await fetch(`/api/lessons/${lesson.slug}/validation-config`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch validation config');
+      }
+      const validationData = await response.json();
+      const config = validationData.config || { mode: 'code', code: '' };
+
+      const studentResult = executeQuery(code);
+      setResult(studentResult);
+      
+      if (!studentResult || !Array.isArray(studentResult)) {
         setValidationState('error');
         setValidationMessage('Ошибка выполнения запроса.');
         return false;
-    }
+      }
 
-    const teacherCode = lesson?.correctAnswer;
-    
-    if (teacherCode) {
+      const teacherCode = config.code;
+      
+      if (teacherCode) {
         const teacherResult = executeQuery(teacherCode);
         
         if (!teacherResult || !Array.isArray(teacherResult)) {
@@ -110,16 +119,23 @@ export function SqlLessonView({ lesson }: SqlLessonViewProps) {
         if (!errorMsg) {
             setValidationState('success');
             setValidationMessage('Отлично! Ваше решение верно.');
-            toast.success("Задание выполнено!");
             return true;
         } else {
             setValidationState('error');
             setValidationMessage(errorMsg);
             return false;
         }
+      } else {
+        // Если нет кода преподавателя, просто проверить что запрос выполняется успешно
+        setValidationState('success');
+        setValidationMessage('Запрос выполнен успешно.');
+        return true;
+      }
+    } catch (e: any) {
+        setValidationState('error');
+        setValidationMessage('Ошибка проверки: ' + e.message);
+        return false;
     }
-    
-    return false;
   };
 
   const handleReset = () => {

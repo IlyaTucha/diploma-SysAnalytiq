@@ -1,6 +1,7 @@
 from ninja import Router
 from typing import List
 from ninja.errors import HttpError
+import json
 from ..domain.entities import (
     ModuleSchema, ModuledDetailSchema, LessonSchema,
     LessonCreateSchema, LessonUpdateSchema, ModuleUpdateSchema, LessonReorderSchema
@@ -79,3 +80,88 @@ def reorder_lessons(request, slug: str, data: LessonReorderSchema):
         raise HttpError(403, "Admin access required")
     return EducationService.reorder_lessons(slug, data.lesson_ids)
 
+
+@router.get("/lessons/{slug}/validation-config")
+def get_lesson_validation_config(request, slug: str):
+    """Get lesson validation configuration for frontend validation"""
+    lesson = EducationService.get_lesson(slug)
+    if not lesson:
+        raise HttpError(404, "Lesson not found")
+    
+    # Return validation config (including reference code) for frontend validation
+    config = {"mode": "code", "code": ""}
+    try:
+        if lesson.correct_answer and lesson.correct_answer.strip().startswith('{'):
+            config = json.loads(lesson.correct_answer)
+        else:
+            config = {"mode": "code", "code": lesson.correct_answer or ""}
+    except json.JSONDecodeError:
+        config = {"mode": "code", "code": lesson.correct_answer or ""}
+    
+    return {
+        "config": config,
+        "lessonType": lesson.type,
+        "lessonSlug": slug
+    }
+
+
+def _validate_erd_solution(student_code: str, config: dict) -> dict:
+    """Basic ERD validation on backend"""
+    try:
+        # Only check if code is empty - detailed validation on frontend
+        if not student_code.strip():
+            return {"valid": False, "error": "Code is empty"}
+        
+        return {"valid": True}
+    except Exception as e:
+        return {"valid": False, "error": f"Validation error: {str(e)}"}
+
+
+
+
+def _validate_sql_solution(student_code: str, config: dict) -> dict:
+    """Basic SQL validation on backend"""
+    try:
+        # Only check if code is empty - detailed validation on frontend
+        if not student_code.strip():
+            return {"valid": False, "error": "SQL code is empty"}
+        
+        return {"valid": True}
+    except Exception as e:
+        return {"valid": False, "error": f"Validation error: {str(e)}"}
+
+
+def _validate_bpmn_solution(student_code: str, config: dict) -> dict:
+    """Basic BPMN validation on backend"""
+    try:
+        # Only check if code is empty - detailed validation on frontend
+        if not student_code.strip():
+            return {"valid": False, "error": "BPMN code is empty"}
+        
+        return {"valid": True}
+    except Exception as e:
+        return {"valid": False, "error": f"Validation error: {str(e)}"}
+
+
+def _validate_plantuml_solution(student_code: str, config: dict) -> dict:
+    """Basic PlantUML validation on backend"""
+    try:
+        # Only check if code is empty - detailed validation on frontend
+        if not student_code.strip():
+            return {"valid": False, "error": "PlantUML code is empty"}
+        
+        return {"valid": True}
+    except Exception as e:
+        return {"valid": False, "error": f"Validation error: {str(e)}"}
+
+
+def _validate_swagger_solution(student_code: str, config: dict) -> dict:
+    """Basic Swagger/OpenAPI validation on backend"""
+    try:
+        # Only check if code is empty - detailed validation on frontend
+        if not student_code.strip():
+            return {"valid": False, "error": "Swagger/OpenAPI code is empty"}
+        
+        return {"valid": True}
+    except Exception as e:
+        return {"valid": False, "error": f"Validation error: {str(e)}"}

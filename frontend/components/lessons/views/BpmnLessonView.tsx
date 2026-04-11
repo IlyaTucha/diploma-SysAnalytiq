@@ -18,17 +18,21 @@ export function BpmnLessonView({ lesson }: BpmnLessonViewProps) {
 
   const [error, setError] = useState<string | null>(null);
 
-  const handleCheck = (code: string) => {
+  const handleCheck = async (code: string) => {
     setError(null);
+    
+    if (!lesson?.slug) {
+      setError('Lesson slug not found');
+      return false;
+    }
+    
     try {
-      let config: any = { mode: 'code', code: '' };
-      try {
-        if (lesson?.correctAnswer && lesson.correctAnswer.trim().startsWith('{')) {
-          config = JSON.parse(lesson.correctAnswer);
-        }
-      } catch {
-        console.error("Ошибка парсинга конфигурации урока");
+      const response = await fetch(`/api/lessons/${lesson.slug}/validation-config`);
+      if (!response.ok) {
+        throw new Error('Erreur de validation');
       }
+      const validationData = await response.json();
+      const config = validationData.config || { mode: 'code', code: '' };
 
       const parser = new DOMParser();
       const doc = parser.parseFromString(code, "text/xml");

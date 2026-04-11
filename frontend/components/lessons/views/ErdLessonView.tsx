@@ -30,17 +30,21 @@ export function ErdLessonView({ lesson }: ErdLessonViewProps) {
     ? existingSubmission.executionResult as ErdLayout
     : null;
 
-  const handleCheck = (code: string) => {
+  const handleCheck = async (code: string) => {
     setError(null);
+    
+    if (!lesson?.slug) {
+      setError('Lesson slug not found');
+      return false;
+    }
+    
     try {
-      let config: any = { mode: 'code', code: '' };
-      try {
-        if (lesson?.correctAnswer && lesson.correctAnswer.trim().startsWith('{')) {
-          config = JSON.parse(lesson.correctAnswer);
-        }
-      } catch {
-        console.error("Ошибка парсинга конфигурации урока");
+      const response = await fetch(`/api/lessons/${lesson.slug}/validation-config`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch validation config');
       }
+      const validationData = await response.json();
+      const config = validationData.config || { mode: 'code', code: '' };
 
       const parseDbml = (dbml: string) => {
         const tables: Record<string, { columns: Record<string, string> }> = {};

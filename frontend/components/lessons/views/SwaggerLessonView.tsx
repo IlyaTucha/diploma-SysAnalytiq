@@ -19,43 +19,71 @@ export function SwaggerLessonView({ lesson }: SwaggerLessonViewProps) {
 
   const [error, setError] = useState<string | null>(null);
 
-  const handleCheck = (code: string) => {
+  const handleCheck = async (code: string) => {
     setError(null);
+    
+    if (!lesson?.slug) {
+      setError('Lesson slug not found');
+      return false;
+    }
+    
     try {
-      let config: any = { mode: 'code', code: '' };
-      try {
-        if (lesson?.correctAnswer && lesson.correctAnswer.trim().startsWith('{')) {
-          config = JSON.parse(lesson.correctAnswer);
-        }
-      } catch {
-        console.error("Ошибка парсинга конфигурации урока");
+      // Получить конфигурацию валидации из API
+      const response = await fetch(`/api/lessons/${lesson.slug}/validation-config`);
+      if (!response.ok) {
+        throw new Error('Ошибка получения конфигурации валидации');
+      }
+      const validationData = await response.json();
+      const config = validationData.config || { mode: 'code', code: '' };
+
+      // Базовая валидация OpenAPI
+      if (!code.trim()) {
+        throw new Error('Swagger/OpenAPI код пуст');
       }
 
-      let parsedSpec: any;
-      try {
-        parsedSpec = yaml.load(code);
-      } catch {
-        throw new Error("Ошибка YAML синтаксиса");
+      if (!code.toLowerCase().includes('openapi:') && !code.toLowerCase().includes('swagger:')) {
+        throw new Error('Должен содержать версию OpenAPI или Swagger');
       }
 
-      // Утилита подсчёта Swagger-метрик
-      const parseSwagger = (spec: any) => {
-        const paths = Object.keys(spec?.paths || {});
-        const pathCount = paths.length;
-        const schemaCount = Object.keys(spec?.components?.schemas || {}).length;
-        // Эндпоинты = уникальные комбинации путь+метод
-        const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'];
-        let endpointCount = 0;
-        const operations: string[] = [];
-        for (const p of paths) {
-          const methods = Object.keys(spec.paths[p] || {}).filter(m => HTTP_METHODS.includes(m));
-          endpointCount += methods.length;
-          methods.forEach(m => operations.push(`${m.toUpperCase()} ${p}`));
+      // Проверка обязательных элементов OpenAPI
+      const requiredElements = ["info", "paths"];
+      for (const element of requiredElements) {
+        if (!code.toLowerCase().includes(`${element}:`)) {
+          throw new Error(`Отсутствует обязательный элемент OpenAPI: ${element}`);
         }
-        return { pathCount, schemaCount, endpointCount, paths, operations };
-      };
+      }
 
-      const studentStats = parseSwagger(parsedSpec);
+      // Базовая проверка синтаксиса YAML/JSON
+      const lines = code.trim().split('\n');
+      if (lines.length < 5) {
+        throw new Error('Спецификация OpenAPI слишком короткая');
+      }
+
+      // Парсинг спецификации OpenAPI для детальной валидации
+      let spec: any;
+      try {
+        // Сначала пробуем парсинг YAML
+        if (code.includes(':') && !code.trim().startsWith('{')) {
+          spec = yaml.load(code);
+        } else {
+          // Пробуем парсинг JSON
+          spec = JSON.parse(code);
+        }
+      } catch (e: any) {
+        throw new Error('Erreur de syntaxe YAML/JSON: ' + e.message);
+      }
+
+      const paths = Object.keys(spec?.paths || {});
+      const pathCount = paths.length;
+      const schemaCount = Object.keys(spec?.components?.schemas || {}).length;
+      
+      // Подсчет эндпоинтов (комбинации путь+метод)
+      const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'];
+      let endpointCount = 0;
+      for (const p of paths) {
+        const methods = Object.keys(spec.paths[p] || {}).filter(m => HTTP_METHODS.includes(m));
+        endpointCount += methods.length;
+      }
 
       if (config.mode === 'manual') {
         const checks = config.checks || [];
@@ -66,30 +94,30 @@ export function SwaggerLessonView({ lesson }: SwaggerLessonViewProps) {
           const suffix = opText ? ` (${opText})` : '';
 
           if (check.type === 'path_count') {
-            if (!checkValue(studentStats.pathCount, expected, operator)) {
-              throw new Error(`Ожидалось путей: ${expected}${suffix}, найдено: ${studentStats.pathCount}`);
+            if (!checkValue(pathCount, expected, operator)) {
+              throw new Error(`Ожидалось путей: ${expected}${suffix}, найдено: ${pathCount}`);
             }
           } else if (check.type === 'schema_count') {
-            if (!checkValue(studentStats.schemaCount, expected, operator)) {
-              throw new Error(`Ожидалось схем: ${expected}${suffix}, найдено: ${studentStats.schemaCount}`);
+            if (!checkValue(schemaCount, expected, operator)) {
+              throw new Error(`Ожидалось схем: ${expected}${suffix}, найдено: ${schemaCount}`);
             }
           } else if (check.type === 'endpoint_count') {
-            if (!checkValue(studentStats.endpointCount, expected, operator)) {
-              throw new Error(`Ожидалось эндпоинтов (путь+метод): ${expected}${suffix}, найдено: ${studentStats.endpointCount}`);
+            if (!checkValue(endpointCount, expected, operator)) {
+              throw new Error(`Ожидалось эндпоинтов: ${expected}${suffix}, найдено: ${endpointCount}`);
             }
           } else if (check.type === 'path_exists') {
-             if (!parsedSpec.paths?.[check.target]) {
-               throw new Error(`Путь "${check.target}" не найден`);
-             }
+            if (!spec.paths?.[check.target]) {
+              throw new Error(`Путь "${check.target}" не найден`);
+            }
           } else if (check.type === 'operation_exists' || check.type === 'method_exists') {
              // Format: /path.method (e.g. /users.get)
-             const opValue = check.target;
-             const dotIdx = opValue.lastIndexOf('.');
-             const path = opValue.substring(0, dotIdx);
-             const method = opValue.substring(dotIdx + 1);
-             if (!parsedSpec.paths?.[path]?.[method]) {
-               throw new Error(`Метод "${method}" для пути "${path}" не найден`);
-             }
+            const opValue = check.target;
+            const dotIdx = opValue.lastIndexOf('.');
+            const path = opValue.substring(0, dotIdx);
+            const method = opValue.substring(dotIdx + 1);
+            if (!spec.paths?.[path]?.[method]) {
+              throw new Error(`Метод "${method}" для пути "${path}" не найден`);
+            }
           }
         }
       } else if (config.code) {
@@ -100,35 +128,31 @@ export function SwaggerLessonView({ lesson }: SwaggerLessonViewProps) {
         } catch {
           throw new Error('Ошибка парсинга эталонного решения');
         }
-        const refStats = parseSwagger(refSpec);
 
-        if (config.checkPathCount && studentStats.pathCount !== refStats.pathCount) {
-          throw new Error(`Ожидалось путей: ${refStats.pathCount}, найдено: ${studentStats.pathCount}`);
+        const refPaths = Object.keys(refSpec?.paths || {});
+        const refPathCount = refPaths.length;
+        const refSchemaCount = Object.keys(refSpec?.components?.schemas || {}).length;
+        let refEndpointCount = 0;
+        for (const path of refPaths) {
+          const methods = Object.keys(refSpec.paths[path] || {}).filter(m => HTTP_METHODS.includes(m));
+          refEndpointCount += methods.length;
         }
-        if (config.checkSchemaCount && studentStats.schemaCount !== refStats.schemaCount) {
-          throw new Error(`Ожидалось схем: ${refStats.schemaCount}, найдено: ${studentStats.schemaCount}`);
+
+        if (config.checkPathCount && pathCount !== refPathCount) {
+          throw new Error(`Ожидалось путей: ${refPathCount}, найдено: ${pathCount}`);
         }
-        if (config.checkEndpointCount && studentStats.endpointCount !== refStats.endpointCount) {
-          throw new Error(`Ожидалось эндпоинтов: ${refStats.endpointCount}, найдено: ${studentStats.endpointCount}`);
+        if (config.checkSchemaCount && schemaCount !== refSchemaCount) {
+          throw new Error(`Ожидалось схем: ${refSchemaCount}, найдено: ${schemaCount}`);
         }
-        if (config.checkPathNames) {
-          const missingPaths = refStats.paths.filter((p: string) => !studentStats.paths.includes(p));
-          if (missingPaths.length > 0) {
-            throw new Error(`Отсутствуют пути: ${missingPaths.join(', ')}`);
-          }
-        }
-        if (config.checkOperationNames) {
-          const missingOps = refStats.operations.filter((o: string) => !studentStats.operations.includes(o));
-          if (missingOps.length > 0) {
-            throw new Error(`Отсутствуют операции: ${missingOps.join(', ')}`);
-          }
+        if (config.checkEndpointCount && endpointCount !== refEndpointCount) {
+          throw new Error(`Ожидалось эндпоинтов: ${refEndpointCount}, найдено: ${endpointCount}`);
         }
       }
 
-      toast.success("Задание выполнено!");
+      toast.success("Task completed successfully!");
       return true;
-    } catch (e: any) {
-      setError(e.message);
+    } catch (error: any) {
+      setError(error.message || 'Validation error');
       return false;
     }
   };

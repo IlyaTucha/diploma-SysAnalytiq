@@ -18,35 +18,41 @@ export function PlantUmlLessonView({ lesson }: PlantUmlLessonViewProps) {
 
   const [error, setError] = useState<string | null>(null);
 
-  const handleCheck = (code: string) => {
+  const handleCheck = async (code: string) => {
     setError(null);
+    
+    if (!lesson?.slug) {
+      setError('Lesson slug not found');
+      return false;
+    }
+    
     try {
-      // Базовая синтаксическая проверка PlantUML
-      const trimmed = code.trim();
-      if (!trimmed) {
-        throw new Error('Код диаграммы пустой');
+      // Fetch validation config from API
+      const response = await fetch(`/api/lessons/${lesson.slug}/validation-config`);
+      if (!response.ok) {
+        throw new Error('Ошибка получения конфигурации валидации');
       }
-      if (!trimmed.includes('@startuml')) {
-        throw new Error('Диаграмма должна начинаться с @startuml');
-      }
-      if (!trimmed.includes('@enduml')) {
-        throw new Error('Диаграмма должна заканчиваться на @enduml');
+      const validationData = await response.json();
+      const config = validationData.config || { mode: 'code', code: '' };
+
+      // Базовая проверка PlantUML
+      if (!code.trim()) {
+        throw new Error('PlantUML код пуст');
       }
 
-      // Извлекаем содержимое между @startuml и @enduml
-      const bodyMatch = trimmed.match(/@startuml[\s\S]*?@enduml/);
-      if (!bodyMatch) {
-        throw new Error('Некорректная структура диаграммы');
+      if (!code.includes('@startuml')) {
+        throw new Error('PlantUML диаграмма должна начинаться с @startuml');
       }
-      const body = bodyMatch[0];
 
-      let config: any = { mode: 'code', code: '' };
-      try {
-        if (lesson?.correctAnswer && lesson.correctAnswer.trim().startsWith('{')) {
-          config = JSON.parse(lesson.correctAnswer);
-        }
-      } catch {
-        console.error("Ошибка парсинга конфигурации урока");
+      if (!code.includes('@enduml')) {
+        throw new Error('PlantUML диаграмма должна заканчиваться @enduml');
+      }
+      // Проверка базовых элементов диаграммы
+      const diagramTypes = ["class", "interface", "enum", "component", "actor", "usecase"];
+      const hasDiagramElement = diagramTypes.some(element => code.toLowerCase().includes(element));
+
+      if (!hasDiagramElement) {
+        throw new Error('PlantUML диаграмма должна содержать хотя бы один элемент диаграммы');
       }
 
       // Универсальный парсинг PlantUML кода
@@ -65,7 +71,7 @@ export function PlantUmlLessonView({ lesson }: PlantUmlLessonViewProps) {
         return { participantCount, relationshipCount, classCount, interfaceCount, loopCount, altCount };
       };
 
-      const studentStats = parsePlantUml(body);
+      const studentStats = parsePlantUml(code);
 
       if (config.mode === 'manual') {
         const checks = config.checks || [];
