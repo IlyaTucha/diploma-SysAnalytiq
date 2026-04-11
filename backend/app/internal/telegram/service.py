@@ -36,6 +36,7 @@ class TelegramService:
             'chat_id': chat_id,
             'text': text,
             'parse_mode': parse_mode,
+            'disable_web_page_preview': True,
         }
         if reply_markup:
             payload['reply_markup'] = reply_markup
@@ -208,18 +209,19 @@ class TelegramService:
 
         message = "\n".join(lines)
 
-        site_url = TelegramService._get_site_url()
-        review_url = f"{site_url}/admin/reviews"
-
         reply_markup = None
-        if TelegramService._is_public_url(site_url):
-            reply_markup = {
-                "inline_keyboard": [[
-                    {"text": "Перейти к проверке", "url": review_url}
-                ]]
-            }
-        else:
-            message += f"\n\n{review_url}"
+        if pending_count > 0:
+            site_url = TelegramService._get_site_url()
+            review_url = f"{site_url}/admin/reviews"
+
+            if TelegramService._is_public_url(site_url):
+                reply_markup = {
+                    "inline_keyboard": [[
+                        {"text": "Перейти к проверке", "url": review_url}
+                    ]]
+                }
+            else:
+                message += f"\n\n{review_url}"
 
         for admin in admins:
             TelegramService.send_message(admin.telegram_id, message, reply_markup=reply_markup)
