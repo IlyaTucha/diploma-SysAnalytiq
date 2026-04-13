@@ -103,8 +103,9 @@ export default function SettingsPage() {
           telegramNotifications: updated.telegramNotifications ?? false,
         });
         toast.success('Telegram аккаунт привязан!');
-      } catch {
-        toast.error('Ошибка привязки Telegram');
+      } catch (err: any) {
+        const message = err?.detail || err?.message || 'Ошибка привязки Telegram';
+        toast.error(message);
       } finally {
         setBinding(false);
       }
