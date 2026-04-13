@@ -149,6 +149,10 @@ export const modulesApi = {
 
 export const lessonsApi = {
   get: (slug: string) => apiFetch<any>(`/lessons/${slug}`),
+  validateSolution: (slug: string, code: string) => apiFetch<any>(`/lessons/${slug}/validate`, {
+    method: 'POST',
+    body: JSON.stringify({ code })
+  }),
   getValidationConfig: async (slug: string) => {
     const rawData = await apiFetch<any>(`/lessons/${slug}/validation-config`);
     if (rawData && rawData.payload) {

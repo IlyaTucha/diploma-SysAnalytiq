@@ -65,6 +65,10 @@ class ModuleUpdateSchema(Schema):
     published: Optional[bool] = None
 
 
+class LessonValidateRequest(Schema):
+    code: str
+
+
 class LessonReorderSchema(Schema):
     lesson_ids: List[str]
 
