@@ -12,11 +12,12 @@ class UserAdmin(BaseUserAdmin):
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         ('Личные данные', {'fields': ('first_name', 'last_name', 'name', 'avatar_url', 'group')}),
-        ('Telegram', {'fields': ('telegram_id', 'telegram_username', 'telegram_notifications')}),
+        ('VK', {'fields': ('vk_id', 'vk_profile_url')}),
+        ('Telegram (уведомления)', {'fields': ('telegram_id', 'telegram_username', 'telegram_notifications')}),
         ('Права доступа', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Важные даты', {'fields': ('last_login', 'date_joined')}),
     )
-    list_display = ('username', 'telegram_username', 'first_name', 'last_name', 'is_staff', 'group')
+    list_display = ('username', 'first_name', 'last_name', 'vk_id', 'telegram_username', 'is_staff', 'group')
     ordering = ('username',)
 
 @admin.register(Group)

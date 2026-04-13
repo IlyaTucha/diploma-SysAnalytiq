@@ -82,3 +82,32 @@ lint-front:
 test-all:
 	cd backend && python -m pytest
 	cd frontend && npm run lint
+
+# ---- Local development (frontend outside Docker) ----
+
+# Start DB + backend in Docker
+dev-backend:
+	docker-compose up -d db app
+	@echo [OK] DB and backend started at http://localhost:8000
+
+# Start frontend locally (Vite dev server)
+dev-frontend:
+	cd frontend && npm run dev
+
+# Full local start: DB + backend + migrations
+# Then run in separate terminals:
+#   make dev-frontend
+#   ngrok http 5173  (if you need VK auth locally)
+dev-start:
+	docker-compose up -d db app
+	@echo Waiting for DB...
+	@ping -n 4 127.0.0.1 >nul 2>&1 || sleep 3
+	docker-compose exec app python manage.py migrate --noinput
+	@echo [OK] DB and backend ready at http://localhost:8000
+	@echo Next steps:
+	@echo   make dev-frontend  - start Vite dev server
+	@echo   ngrok http 5173    - ngrok tunnel for VK auth
+
+# Stop backend and DB
+dev-stop:
+	docker-compose stop db app

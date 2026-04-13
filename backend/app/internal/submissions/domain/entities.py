@@ -7,6 +7,7 @@ class SubmissionSchema(Schema):
     id: int
     student_id: Optional[uuid.UUID] = None
     student_name: str = ""
+    student_vk_profile_url: str = ""
     student_telegram_username: str = ""
     student_group_id: Optional[uuid.UUID] = None
     lesson_id: uuid.UUID
@@ -28,6 +29,12 @@ class SubmissionSchema(Schema):
         if obj.student:
             return obj.student.display_name
         return obj.student_display_name or 'Удалённый студент'
+
+    @staticmethod
+    def resolve_student_vk_profile_url(obj):
+        if obj.student:
+            return obj.student.vk_profile_url or ""
+        return ""
 
     @staticmethod
     def resolve_student_telegram_username(obj):

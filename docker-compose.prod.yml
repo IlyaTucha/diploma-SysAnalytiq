@@ -38,6 +38,8 @@ services:
       dockerfile: Dockerfile.prod
       args:
         - VITE_API_URL=${VITE_API_URL:-http://127.0.0.1:8000/api}
+        - VITE_VK_APP_ID=${VITE_VK_APP_ID}
+        - VITE_TELEGRAM_BOT_NAME=${VITE_TELEGRAM_BOT_NAME}
     container_name: diploma_frontend
     restart: unless-stopped
     ports:

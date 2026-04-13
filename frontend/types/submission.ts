@@ -4,6 +4,7 @@ export interface Submission {
   id: number;
   studentId: string;
   studentName?: string;
+  studentVkProfileUrl?: string;
   studentTelegramUsername?: string;
   studentGroupId?: string;
   lessonId: string;

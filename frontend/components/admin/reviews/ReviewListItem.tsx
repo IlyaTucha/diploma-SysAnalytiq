@@ -5,7 +5,7 @@ import { User, Calendar, ExternalLink, History, CheckCircle, XCircle } from 'luc
 import { Submission } from '@/types/submission';
 import { Group } from '@/types/group';
 import { useData } from '@/lib/data';
-import { TelegramLink } from '@/components/ui/TelegramLink';
+import { VKProfileLink } from '@/components/ui/ProfileLinks';
 import { getNoun } from '@/components/ui/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ReviewHistoryDialog } from './ReviewHistoryDialog';
@@ -22,7 +22,7 @@ export function ReviewListItem({ submission, onOpenReview, groups, hideLesson }:
   const [showHistory, setShowHistory] = useState(false);
   const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<any>(null);
   const studentName = submission.studentName || 'Неизвестный студент';
-  const studentTg = submission.studentTelegramUsername || '';
+  const studentVkUrl = submission.studentVkProfileUrl || '';
   const lesson = lessonsData.find(l => l.id === submission.lessonId);
   const lessonTitle = lesson?.title || 'Unknown Lesson';
   const groupName = groups?.find(g => g.id === submission.studentGroupId)?.name;
@@ -48,10 +48,7 @@ export function ReviewListItem({ submission, onOpenReview, groups, hideLesson }:
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <User className="w-4 h-4 text-muted-foreground" />
-              <span>{studentName}</span>
-              {studentTg && (
-                <TelegramLink username={studentTg} className="text-sm" />
-              )}
+              <VKProfileLink url={studentVkUrl} name={studentName} className="text-sm" />
               {groupName && (
                 <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{groupName}</span>
               )}

@@ -14,7 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Group } from '@/types/group';
 import { User } from '@/types/user';
-import { TelegramLink } from '@/components/ui/TelegramLink';
+import { VKProfileLink } from '@/components/ui/ProfileLinks';
 import { groupsApi } from '@/lib/api';
 
 interface EditGroupDialogProps {
@@ -137,7 +137,7 @@ export function EditGroupDialog({
                   </Avatar>
                   <div>
                       <div className="font-medium">{user.name}</div>
-                      <TelegramLink username={user.telegramUsername} className="text-xs" />
+                      <VKProfileLink url={user.vkProfileUrl} name={user.name} className="text-xs" />
                   </div>
                  </div>
                  <Button 

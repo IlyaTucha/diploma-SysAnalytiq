@@ -9,9 +9,13 @@ RUN --mount=type=cache,target=/root/.npm \
 
 COPY . .
 
-# Принимаем переменные сборки для Vite (например, API_URL)
+# Принимаем переменные сборки для Vite
 ARG VITE_API_URL
+ARG VITE_VK_APP_ID
+ARG VITE_TELEGRAM_BOT_NAME
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_VK_APP_ID=$VITE_VK_APP_ID
+ENV VITE_TELEGRAM_BOT_NAME=$VITE_TELEGRAM_BOT_NAME
 
 RUN npm run build
 

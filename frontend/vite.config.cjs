@@ -3,10 +3,13 @@ const react = require('@vitejs/plugin-react');
 const path = require('path');
 const monacoEditorPlugin = require('vite-plugin-monaco-editor').default;
 
+const backendTarget = process.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
 module.exports = defineConfig({
+    envDir: path.resolve(__dirname, '..'),
     plugins: [
         react(),
-        monacoEditorPlugin({})
+        monacoEditorPlugin({}),
     ],
     server: {
         host: '0.0.0.0',
@@ -15,17 +18,20 @@ module.exports = defineConfig({
             'sysanalytiq.ru',
             'www.sysanalytiq.ru',
             'localhost',
+            '127.0.0.1',
+            '.ngrok-free.dev',
         ],
         proxy: {
             '/api': {
-                target: 'http://app:8000',
+                target: backendTarget,
+                changeOrigin: true,
+            },
+            '/sys-admin': {
+                target: backendTarget,
                 changeOrigin: true,
             },
         },
-        hmr: {
-            clientPort: 443,
-            overlay: false,
-        },
+        hmr: false,
     },
     resolve: {
         alias: {

@@ -6,7 +6,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   user: User | null;
-  login: (telegramData: any) => Promise<void>;
+  login: (vkData: any) => Promise<void>;
   logout: () => void;
   updateUser: (user: User) => void;
 }
@@ -19,6 +19,7 @@ function mapUserData(u: any): User {
     name: u.name,
     firstName: u.firstName || '',
     lastName: u.lastName || '',
+    vkProfileUrl: u.vkProfileUrl || '',
     telegramUsername: u.telegramUsername || '',
     telegramNotifications: u.telegramNotifications ?? false,
     avatar: u.avatar || undefined,
@@ -37,8 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAuthenticated = !!user;
   const isAdmin = !!user?.isAdmin;
 
-  const login = async (telegramData: any) => {
-    const res = await authApi.telegramLogin(telegramData);
+  const login = async (vkData: any) => {
+    const res = await authApi.vkLogin(vkData);
     setTokens(res.access, res.refresh);
 
     const userData = mapUserData(res.user);

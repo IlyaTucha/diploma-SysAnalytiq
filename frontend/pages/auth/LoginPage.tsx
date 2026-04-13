@@ -6,15 +6,16 @@ import { toast } from "sonner";
 
 declare global {
   interface Window {
-    onTelegramAuth?: (user: any) => void;
+    VKIDSDK?: any;
   }
 }
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
-  const telegramRef = useRef<HTMLDivElement>(null);
-  const [widgetError, setWidgetError] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const vkContainerRef = useRef<HTMLDivElement>(null);
+  const sdkInitialized = useRef(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -23,47 +24,70 @@ export default function LoginPage() {
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
-    window.onTelegramAuth = async (tgUser: any) => {
-      try {
-        await login({
-          id: tgUser.id,
-          first_name: tgUser.first_name || '',
-          last_name: tgUser.last_name || '',
-          username: tgUser.username || '',
-          photo_url: tgUser.photo_url || '',
-          auth_date: tgUser.auth_date,
-          hash: tgUser.hash,
-        });
-        toast.success('Успешный вход!');
-        navigate('/');
-      } catch {
-        toast.error('Ошибка входа через Telegram');
-      }
-    };
+    if (sdkInitialized.current || isAuthenticated) return;
 
-    return () => {
-      delete window.onTelegramAuth;
-    };
-  }, [login, navigate]);
-
-  useEffect(() => {
-    if (!telegramRef.current) return;
-
-    const botName = import.meta.env.VITE_TELEGRAM_BOT_NAME || 'SysAnalytiqBot';
+    const appId = import.meta.env.VITE_VK_APP_ID;
+    if (!appId) {
+      toast.error('VITE_VK_APP_ID не настроен');
+      return;
+    }
 
     const script = document.createElement('script');
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+    script.src = 'https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js';
     script.async = true;
-    script.setAttribute('data-telegram-login', botName);
-    script.setAttribute('data-size', 'large');
-    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-    script.setAttribute('data-request-access', 'write');
-    script.setAttribute('data-radius', '8');
-    script.onerror = () => setWidgetError(true);
+    script.onload = () => {
+      const VKID = window.VKIDSDK;
+      if (!VKID || !vkContainerRef.current) return;
 
-    telegramRef.current.innerHTML = '';
-    telegramRef.current.appendChild(script);
-  }, []);
+      sdkInitialized.current = true;
+
+      VKID.Config.init({
+        app: Number(appId),
+        redirectUrl: `${window.location.origin}/login`,
+        responseMode: VKID.ConfigResponseMode.Callback,
+        source: VKID.ConfigSource.LOWCODE,
+        scope: '',
+      });
+
+      const oneTap = new VKID.OneTap();
+
+      oneTap.render({
+        container: vkContainerRef.current,
+        showAlternativeLogin: true,
+      })
+        .on(VKID.WidgetEvents.ERROR, (error: any) => {
+          console.error('VK ID error:', error);
+          toast.error('Ошибка VK ID');
+        })
+        .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload: any) => {
+          const code = payload.code;
+          const deviceId = payload.device_id;
+
+          setLoading(true);
+          try {
+            const tokenData = await VKID.Auth.exchangeCode(code, deviceId);
+            await login({
+              access_token: tokenData.access_token,
+            });
+            toast.success('Успешный вход!');
+            navigate('/', { replace: true });
+          } catch (err) {
+            console.error('VK auth error:', err);
+            toast.error('Ошибка входа через VK');
+          } finally {
+            setLoading(false);
+          }
+        });
+    };
+
+    document.head.appendChild(script);
+
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+  }, [isAuthenticated, login, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)' }}>
@@ -79,27 +103,18 @@ export default function LoginPage() {
 
         <h2 className="text-center text-xl font-semibold mb-6">Войдите, чтобы продолжить</h2>
 
-        <div className="flex justify-center w-full" ref={telegramRef}>
+        <div className="flex justify-center w-full">
+          {loading ? (
+            <p className="text-muted-foreground">Вход...</p>
+          ) : (
+            <div ref={vkContainerRef} className="w-full" />
+          )}
         </div>
 
-        {widgetError && (
-          <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
-            <p className="text-sm text-destructive font-medium mb-1">
-              Не удалось загрузить виджет Telegram
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Проверьте подключение к интернету или отключите прокси/VPN
-            </p>
-          </div>
-        )}
-
         <p className="text-center text-sm text-muted-foreground mt-6">
-          Авторизация через Telegram аккаунт
+          Авторизация через VK аккаунт
         </p>
       </Card>
     </div>
   );
 }
-
-
-

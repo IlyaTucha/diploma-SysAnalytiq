@@ -103,8 +103,8 @@ async function apiFetch<T>(
 }
 
 export const authApi = {
-  telegramLogin: (data: any) =>
-    apiFetch<{ access: string; refresh: string; user: any }>('/auth/telegram', {
+  vkLogin: (data: { access_token: string }) =>
+    apiFetch<{ access: string; refresh: string; user: any }>('/auth/vk', {
       method: 'POST',
       body: JSON.stringify(data),
     }, true),
@@ -119,6 +119,15 @@ export const authApi = {
 
   deleteAccount: () =>
     apiFetch<any>('/auth/me', { method: 'DELETE' }),
+
+  bindTelegram: (data: any) =>
+    apiFetch<any>('/auth/telegram-bind', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  unbindTelegram: () =>
+    apiFetch<any>('/auth/telegram-bind', { method: 'DELETE' }),
 
   toggleTelegramNotifications: (enabled: boolean) =>
     apiFetch<any>('/auth/telegram-notifications', {

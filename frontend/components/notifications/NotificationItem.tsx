@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Notification } from '@/types/notification';
-import { TelegramLink } from '@/components/ui/TelegramLink';
 
 interface NotificationItemProps {
   notification: Notification;
@@ -142,9 +141,6 @@ export function NotificationItem({ notification, onRead, isPinned, onCollapse }:
                         )}
                       </div>
                       <span className="font-medium text-foreground text-sm">{notification.reviewer.name}</span>
-                      {(notification.reviewer as any).telegramUsername && (
-                        <TelegramLink username={(notification.reviewer as any).telegramUsername} className="text-sm" />
-                      )}
                     </div>
                   );
 

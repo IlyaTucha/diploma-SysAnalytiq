@@ -36,7 +36,11 @@ class User(AbstractUser):
     avatar_url = models.URLField(max_length=500, blank=True, default='')
     group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
 
-    # Telegram fields
+    # VK fields (primary auth)
+    vk_id = models.BigIntegerField(unique=True, null=True, blank=True)
+    vk_profile_url = models.URLField(max_length=500, blank=True, default='')
+
+    # Telegram fields (notifications only)
     telegram_id = models.BigIntegerField(unique=True, null=True, blank=True)
     telegram_username = models.CharField(max_length=255, blank=True, default='')
     telegram_notifications = models.BooleanField(default=False)
@@ -53,6 +57,5 @@ class User(AbstractUser):
         return full or self.name or self.telegram_username or self.username
 
     def __str__(self):
-        if self.telegram_username:
-            return f"@{self.telegram_username}"
-        return self.username
+        full = f"{self.first_name} {self.last_name}".strip()
+        return full or self.name or self.username

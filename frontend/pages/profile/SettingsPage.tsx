@@ -1,14 +1,14 @@
 import { useTheme } from '@/components/contexts/ThemeProvider';
 import { useAuth } from '@/components/contexts/AuthContext';
-import { useState } from 'react';
-import { Settings, Users, UserIcon, Save, Bell, Shield } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Settings, Users, UserIcon, Save, Bell, Shield, LinkIcon, Unlink } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { TelegramLink } from '@/components/ui/TelegramLink';
+import { TelegramLink } from '@/components/ui/ProfileLinks';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,12 @@ import {
 import { authApi } from '@/lib/api';
 import { toast } from 'sonner';
 
+declare global {
+  interface Window {
+    onTelegramBind?: (user: any) => void;
+  }
+}
+
 export default function SettingsPage() {
   const { getThemeColor } = useTheme();
   const { user, updateUser, logout } = useAuth();
@@ -30,8 +36,11 @@ export default function SettingsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [binding, setBinding] = useState(false);
+  const telegramWidgetRef = useRef<HTMLDivElement>(null);
 
   const notificationsEnabled = user?.telegramNotifications ?? false;
+  const telegramBound = !!user?.telegramUsername;
 
   const handleToggleNotifications = async () => {
     if (!user) return;
@@ -53,6 +62,73 @@ export default function SettingsPage() {
       setToggling(false);
     }
   };
+
+  const handleUnbindTelegram = async () => {
+    if (!user) return;
+    setBinding(true);
+    try {
+      const updated = await authApi.unbindTelegram();
+      updateUser({
+        ...user,
+        telegramUsername: updated.telegramUsername || '',
+        telegramNotifications: updated.telegramNotifications ?? false,
+      });
+      toast.success('Telegram аккаунт отвязан');
+    } catch {
+      toast.error('Ошибка отвязки Telegram');
+    } finally {
+      setBinding(false);
+    }
+  };
+
+  useEffect(() => {
+    if (telegramBound) return;
+
+    window.onTelegramBind = async (tgUser: any) => {
+      if (!user) return;
+      setBinding(true);
+      try {
+        const updated = await authApi.bindTelegram({
+          id: tgUser.id,
+          first_name: tgUser.first_name || '',
+          last_name: tgUser.last_name || '',
+          username: tgUser.username || '',
+          photo_url: tgUser.photo_url || '',
+          auth_date: tgUser.auth_date,
+          hash: tgUser.hash,
+        });
+        updateUser({
+          ...user,
+          telegramUsername: updated.telegramUsername || tgUser.username || '',
+          telegramNotifications: updated.telegramNotifications ?? false,
+        });
+        toast.success('Telegram аккаунт привязан!');
+      } catch {
+        toast.error('Ошибка привязки Telegram');
+      } finally {
+        setBinding(false);
+      }
+    };
+
+    return () => { delete window.onTelegramBind; };
+  }, [telegramBound, user, updateUser]);
+
+  useEffect(() => {
+    if (telegramBound || !telegramWidgetRef.current) return;
+
+    const botName = import.meta.env.VITE_TELEGRAM_BOT_NAME || 'SysAnalytiqBot';
+    const script = document.createElement('script');
+    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+    script.async = true;
+    script.setAttribute('data-telegram-login', botName);
+    script.setAttribute('data-size', 'medium');
+    script.setAttribute('data-onauth', 'onTelegramBind(user)');
+    script.setAttribute('data-request-access', 'write');
+    script.setAttribute('data-radius', '8');
+
+    telegramWidgetRef.current.innerHTML = '';
+    telegramWidgetRef.current.appendChild(script);
+  }, [telegramBound]);
 
   const handleSaveProfile = async () => {
     setSaving(true);
@@ -94,18 +170,6 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-4">
-                  {/* Telegram username — только для чтения */}
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Telegram</Label>
-                    <div className="mt-1">
-                      {user?.telegramUsername ? (
-                        <TelegramLink username={user.telegramUsername} className="text-base" />
-                      ) : (
-                        <span className="text-muted-foreground">Не указан</span>
-                      )}
-                    </div>
-                  </div>
-
                   {/* Имя и Фамилия в две колонки */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Имя */}
@@ -163,6 +227,36 @@ export default function SettingsPage() {
                 )}
               </Card>
 
+              {/* Привязка Telegram */}
+              <Card className="p-6 rounded-xl">
+                <div className="flex items-center gap-3 mb-4">
+                  <LinkIcon className="w-5 h-5" style={{ color: '#4F46E5' }} />
+                  <h2>Привязка Telegram</h2>
+                </div>
+
+                <div className="space-y-4">
+                  {telegramBound ? (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Привязанный аккаунт:</p>
+                        <TelegramLink username={user?.telegramUsername || ''} className="text-base" />
+                      </div>
+                      <Button variant="outline" size="sm" onClick={handleUnbindTelegram} disabled={binding}>
+                        <Unlink className="w-4 h-4 mr-2" />
+                        {binding ? 'Отвязка...' : 'Отвязать'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Привяжите Telegram аккаунт для получения уведомлений о проверке заданий
+                      </p>
+                      <div ref={telegramWidgetRef} />
+                    </div>
+                  )}
+                </div>
+              </Card>
+
               {/* Уведомления */}
               <Card className="p-6 rounded-xl">
                 <div className="flex items-center gap-3 mb-4">
@@ -181,9 +275,14 @@ export default function SettingsPage() {
                     <Switch
                       checked={notificationsEnabled}
                       onCheckedChange={handleToggleNotifications}
-                      disabled={toggling}
+                      disabled={toggling || !telegramBound}
                     />
                   </div>
+                  {!telegramBound && (
+                    <p className="text-xs text-muted-foreground">
+                      Для включения уведомлений необходимо привязать Telegram аккаунт
+                    </p>
+                  )}
                 </div>
               </Card>
 
@@ -244,6 +343,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-
-

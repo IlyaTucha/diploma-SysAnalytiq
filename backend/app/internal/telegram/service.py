@@ -61,7 +61,7 @@ class TelegramService:
         lesson = submission.lesson
         module = lesson.module
 
-        reviewer_name = _user_link(reviewer)
+        reviewer_name = f'<b>{_escape_html(reviewer.display_name)}</b>'
 
         if status == 'approved':
             status_line = "Задание принято ✅"
@@ -241,16 +241,13 @@ class TelegramService:
 
 
 def _user_link(user):
-    """Формирует кликабельную ссылку на пользователя в Telegram.
+    """Формирует кликабельную ссылку на пользователя в VK.
     
-    Просто кликабельное имя, ведёт на профиль Telegram.
+    Используется для отображения студентов преподавателям.
     """
     name = _escape_html(user.display_name)
-    if user.telegram_username:
-        tg = _escape_html(user.telegram_username)
-        return f'<a href="https://t.me/{tg}">{name}</a>'
-    if user.telegram_id:
-        return f'<a href="tg://user?id={user.telegram_id}">{name}</a>'
+    if user.vk_profile_url:
+        return f'<a href="{user.vk_profile_url}">{name}</a>'
     return f'<b>{name}</b>'
 
 

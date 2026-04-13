@@ -7,6 +7,7 @@ class UserSchema(Schema):
     name: str = ""
     first_name: str = ""
     last_name: str = ""
+    vk_profile_url: str = ""
     telegram_username: str = ""
     telegram_notifications: bool = False
     avatar: Optional[str] = None
@@ -14,14 +15,8 @@ class UserSchema(Schema):
     group_id: Optional[uuid.UUID] = None
     group_name: Optional[str] = None
 
-class TelegramLoginSchema(Schema):
-    id: int
-    first_name: str = ""
-    last_name: str = ""
-    username: str = ""
-    photo_url: str = ""
-    auth_date: int
-    hash: str
+class VKLoginSchema(Schema):
+    access_token: str
 
 class UpdateProfileSchema(Schema):
     first_name: str = ""
@@ -29,6 +24,15 @@ class UpdateProfileSchema(Schema):
 
 class ToggleNotificationsSchema(Schema):
     enabled: bool
+
+class TelegramBindSchema(Schema):
+    id: int
+    first_name: str = ""
+    last_name: str = ""
+    username: str = ""
+    photo_url: str = ""
+    auth_date: int
+    hash: str
 
 class AuthResponse(Schema):
     access: str

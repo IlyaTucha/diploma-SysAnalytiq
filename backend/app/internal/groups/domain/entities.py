@@ -36,6 +36,7 @@ class GroupInviteInfoSchema(Schema):
 class GroupMemberSchema(Schema):
     id: uuid.UUID
     name: str
+    vk_profile_url: str = ""
     telegram_username: str = ""
     first_name: str = ""
     last_name: str = ""
