@@ -13,6 +13,7 @@ pytest
 pytest-django
 gunicorn
 whitenoise
+pyyaml
 
 
 

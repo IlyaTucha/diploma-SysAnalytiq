@@ -22,7 +22,7 @@ export function BpmnLessonView({ lesson }: BpmnLessonViewProps) {
     setError(null);
     
     if (!lesson?.slug) {
-      setError('Lesson slug not found');
+      setError('Идентификатор урока не найден');
       return false;
     }
     
@@ -30,13 +30,15 @@ export function BpmnLessonView({ lesson }: BpmnLessonViewProps) {
       const response = await lessonsApi.validateSolution(lesson.slug, code);
       
       if (!response || !response.valid) {
-        throw new Error(response?.error || 'Ошибка валидации решения');
+        const msg = response?.error || 'Ошибка валидации решения';
+        setError(msg);
+        return false;
       }
 
-      toast.success("Задание выполнено!");
+      toast.success(response.message || "Задание выполнено!");
       return true;
     } catch (e: any) {
-      setError(e.message);
+      setError(e.message || 'Ошибка при проверке решения');
       return false;
     }
   };

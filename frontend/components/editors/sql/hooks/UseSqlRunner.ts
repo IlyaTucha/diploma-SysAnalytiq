@@ -41,8 +41,8 @@ export function useSqlRunner() {
         setDb(newDb);
         setIsLoading(false);
       } catch (err) {
-        console.error("Failed to initialize SQL.js", err);
-        setError("Failed to initialize database engine");
+        console.error("Ошибка инициализации SQL.js", err);
+        setError("Ошибка инициализации движка базы данных");
         setIsLoading(false);
       }
     };
@@ -51,7 +51,7 @@ export function useSqlRunner() {
   }, []);
 
   const translateSqlError = (msg: string): string => {
-    // Translate common sql.js / SQLite error messages to Russian
+    // Перевод типичных ошибок sql.js / SQLite на русский
     if (/incomplete input/i.test(msg)) return 'Неполный SQL-запрос. Проверьте синтаксис.';
     if (/near "(.+?)": syntax error/i.test(msg)) {
       const m = msg.match(/near "(.+?)": syntax error/i);
@@ -90,7 +90,7 @@ export function useSqlRunner() {
     if (/too many terms in compound SELECT/i.test(msg)) return 'Слишком много выражений в составном запросе.';
     if (/RIGHT and FULL OUTER JOIN/i.test(msg)) return 'RIGHT и FULL OUTER JOIN не поддерживаются в SQLite.';
     if (/cannot use window functions in/i.test(msg)) return 'Нельзя использовать оконные функции в данном контексте.';
-    return msg; // Return as-is if no translation found
+    return msg; // Вернуть как есть, если перевод не найден
   };
 
   const executeQuery = (sql: string) => {

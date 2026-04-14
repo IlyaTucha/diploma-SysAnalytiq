@@ -92,10 +92,13 @@ export default function AdminReviews() {
     if (!getAccessToken()) return;
     loadSubmissions();
     groupsApi.list().then((data) => setGroups(data as unknown as Group[])).catch(() => {});
-    const interval = setInterval(() => {
-      if (getAccessToken()) loadSubmissions();
-    }, 30000);
-    return () => clearInterval(interval);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && getAccessToken()) {
+        loadSubmissions();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [loadSubmissions]);
 
   const filteredSubmissions = submissions.filter(s => {

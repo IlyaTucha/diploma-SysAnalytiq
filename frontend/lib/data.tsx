@@ -37,7 +37,7 @@ const DataContext = createContext<DataContextType>({
 });
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const [modules, setModules] = useState<Module[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -57,14 +57,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadSubmissions = useCallback(async () => {
-    if (!getAccessToken()) return;
+    if (!getAccessToken() || isAdmin) return;
     try {
       const subs = await submissionsApi.list();
       setSubmissions(subs as Submission[]);
     } catch (err) {
       console.error(err);
     }
-  }, []);
+  }, [isAdmin]);
 
   const loadData = useCallback(async () => {
     try {
@@ -86,24 +86,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadData();
 
-    const interval = setInterval(() => {
-      if (getAccessToken()) {
-        loadSubmissions();
-      }
-    }, 30000);
-
     const handleVisibility = () => {
       if (document.visibilityState === 'visible' && getAccessToken()) {
         modulesApi.list().then(mods => loadLessons(mods)).catch(() => {});
+        if (!isAdmin) loadSubmissions();
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [isAuthenticated, loadData, loadSubmissions, loadLessons]);
+  }, [isAuthenticated, isAdmin, loadData, loadSubmissions, loadLessons]);
 
   const reloadLessons = useCallback(async () => {
     try {

@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { Notification } from '@/types/notification';
 import { notificationsApi, getAccessToken } from '@/lib/api';
 import { useAuth } from '@/components/contexts/AuthContext';
+
+const PUSH_ENABLED_KEY = 'pushNotificationsEnabled';
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -9,6 +11,10 @@ interface NotificationContextType {
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   refreshNotifications: () => void;
+  pushEnabled: boolean;
+  setPushEnabled: (enabled: boolean) => void;
+  pushSupported: boolean;
+  pushDenied: boolean;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -32,27 +38,81 @@ function mapApiNotification(n: any): Notification {
   };
 }
 
-export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+function sendBrowserNotification(title: string, body: string) {
+  if (typeof window === 'undefined' || !('Notification' in window)) return;
+  if (window.Notification.permission !== 'granted') return;
+  if (document.visibilityState === 'visible') return;
+  try {
+    new window.Notification(title, { body, icon: '/favicon.ico' });
+  } catch { /* игнорируем ошибки */ }
+}
 
-  const loadNotifications = () => {
-    if (!getAccessToken()) return;
+export function NotificationProvider({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isAdmin } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const prevIdsRef = useRef<Set<string>>(new Set());
+  const pushSupported = typeof window !== 'undefined' && 'Notification' in window;
+  const [pushEnabled, setPushEnabledState] = useState(() => {
+    try { return localStorage.getItem(PUSH_ENABLED_KEY) === 'true'; } catch { return false; }
+  });
+  const [pushDenied, setPushDenied] = useState(() => {
+    return pushSupported && window.Notification.permission === 'denied';
+  });
+
+  const setPushEnabled = useCallback(async (enabled: boolean) => {
+    if (enabled && pushSupported) {
+      if (window.Notification.permission === 'denied') {
+        setPushDenied(true);
+        return;
+      }
+      const permission = await window.Notification.requestPermission();
+      setPushDenied(permission === 'denied');
+      if (permission !== 'granted') return;
+    }
+    setPushEnabledState(enabled);
+    try { localStorage.setItem(PUSH_ENABLED_KEY, String(enabled)); } catch {}
+  }, [pushSupported]);
+
+  const loadNotifications = useCallback(() => {
+    if (!getAccessToken() || isAdmin) return;
     notificationsApi.list()
-      .then(data => setNotifications(data.map(mapApiNotification)))
+      .then(data => {
+        const mapped = data.map(mapApiNotification);
+        // Отправляем браузерное уведомление для новых непрочитанных
+        if (pushEnabled && prevIdsRef.current.size > 0) {
+          for (const n of mapped) {
+            if (!n.isRead && n.type !== 'pending' && !prevIdsRef.current.has(n.id)) {
+              const typeLabel = n.type === 'approved' ? 'Работа принята' : n.type === 'rejected' ? 'Работа отклонена' : 'Уведомление';
+              sendBrowserNotification(typeLabel, n.lessonTitle || n.generalComment || '');
+            }
+          }
+        }
+        prevIdsRef.current = new Set(mapped.map(n => n.id));
+        setNotifications(mapped);
+      })
       .catch(() => {});
-  };
+  }, [isAdmin, pushEnabled]);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || isAdmin) return;
     loadNotifications();
+
+    // Поллинг каждые 60 секунд
     const interval = setInterval(() => {
-      if (getAccessToken()) {
+      if (getAccessToken()) loadNotifications();
+    }, 60000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && getAccessToken()) {
         loadNotifications();
       }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated]);
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [isAuthenticated, isAdmin, loadNotifications]);
 
   // Не считаем "На повторной проверке" (pending) в счётчике
   const unreadCount = notifications.filter(n => !n.isRead && n.type !== 'pending').length;
@@ -72,7 +132,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   };
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, refreshNotifications: loadNotifications }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, refreshNotifications: loadNotifications, pushEnabled, setPushEnabled, pushSupported, pushDenied }}>
       {children}
     </NotificationContext.Provider>
   );

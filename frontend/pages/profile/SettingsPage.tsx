@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { authApi } from '@/lib/api';
 import { toast } from 'sonner';
+import { useNotifications } from '@/components/contexts/NotificationContext';
 
 declare global {
   interface Window {
@@ -29,7 +30,8 @@ declare global {
 export default function SettingsPage() {
   const { getThemeColor } = useTheme();
   const { user, updateUser, logout } = useAuth();
-
+  const { pushEnabled, setPushEnabled, pushSupported, pushDenied } = useNotifications();
+  
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
   const [saving, setSaving] = useState(false);
@@ -266,6 +268,28 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-4">
+                  {pushSupported && (
+                    <div className="flex flex-col py-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="mb-1">Браузерные уведомления</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Показывать всплывающие уведомления в браузере при проверке заданий
+                          </p>
+                        </div>
+                        <Switch
+                          checked={pushEnabled}
+                          onCheckedChange={setPushEnabled}
+                          disabled={pushDenied}
+                        />
+                      </div>
+                      {pushDenied && (
+                        <p className="text-xs text-destructive mt-1">
+                          Уведомления заблокированы браузером. Зайдите в настройки сайта и разрешите уведомления, после чего перезагрузите страницу.
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between py-3">
                     <div>
                       <h4 className="mb-1">Telegram уведомления</h4>

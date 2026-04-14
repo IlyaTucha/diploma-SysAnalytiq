@@ -49,31 +49,6 @@ export function SqlLessonView({ lesson }: SqlLessonViewProps) {
     editorRef.current = editor;
   };
 
-  const compareResults = (student: any[], teacher: any[]) => {
-    if (student.length === 0 && teacher.length > 0) return "Ваш запрос не вернул данных, хотя должен был.";
-    
-    const studentCols = Object.keys(student[0] || {});
-    const teacherCols = Object.keys(teacher[0] || {});
-    
-    const missingCols = teacherCols.filter(c => !studentCols.includes(c));
-    if (missingCols.length > 0) {
-        return "В результате отсутствуют необходимые колонки: " + missingCols.join(', ');
-    }
-
-    if (student.length > teacher.length) {
-        return "Результат содержит слишком много строк (" + student.length + " вместо " + teacher.length + "). Возможно, условия фильтрации слишком мягкие или отсутствуют.";
-    }
-    if (student.length < teacher.length) {
-        return "Результат содержит недостаточно строк (" + student.length + " вместо " + teacher.length + "). Возможно, условия фильтрации слишком жесткие.";
-    }
-
-    if (JSON.stringify(student) !== JSON.stringify(teacher)) {
-        return "Количество строк совпадает, но данные внутри отличаются. Проверьте порядок выборки или сортировку.";
-    }
-
-    return null;
-  };
-
   const handleRun = (code: string) => {
     if (!db) return;
     const res = executeQuery(code);
@@ -83,58 +58,24 @@ export function SqlLessonView({ lesson }: SqlLessonViewProps) {
   };
 
   const handleCheck = async (code: string) => {
-    if (!db) return false;
+    if (!lesson?.slug) return false;
     
     try {
-      // Получить конфигурацию валидации из API
-      const validationData = await lessonsApi.getValidationConfig(lesson.slug);
-      if (!validationData) {
-        throw new Error('Failed to fetch validation config');
-      }
-      const config = validationData.config || { mode: 'code', code: '' };
-
-      const studentResult = executeQuery(code);
-      setResult(studentResult);
+      const response = await lessonsApi.validateSolution(lesson.slug, code);
       
-      if (!studentResult || !Array.isArray(studentResult)) {
+      if (!response || !response.valid) {
         setValidationState('error');
-        setValidationMessage('Ошибка выполнения запроса.');
+        setValidationMessage(response?.error || 'Ошибка валидации решения');
         return false;
       }
 
-      const teacherCode = config.code;
-      
-      if (teacherCode) {
-        const teacherResult = executeQuery(teacherCode);
-        
-        if (!teacherResult || !Array.isArray(teacherResult)) {
-             console.error("Teacher solution failed:", teacherResult);
-             setValidationState('error');
-             setValidationMessage('Ошибка проверки: эталонное решение неверно.');
-             return false;
-        }
-
-        const errorMsg = compareResults(studentResult, teacherResult);
-
-        if (!errorMsg) {
-            setValidationState('success');
-            setValidationMessage('Отлично! Ваше решение верно.');
-            return true;
-        } else {
-            setValidationState('error');
-            setValidationMessage(errorMsg);
-            return false;
-        }
-      } else {
-        // Если нет кода преподавателя, просто проверить что запрос выполняется успешно
-        setValidationState('success');
-        setValidationMessage('Запрос выполнен успешно.');
-        return true;
-      }
+      setValidationState('success');
+      setValidationMessage(response.message || 'Отлично! Ваше решение верно.');
+      return true;
     } catch (e: any) {
-        setValidationState('error');
-        setValidationMessage('Ошибка проверки: ' + e.message);
-        return false;
+      setValidationState('error');
+      setValidationMessage(e.message || 'Ошибка при проверке решения');
+      return false;
     }
   };
 
