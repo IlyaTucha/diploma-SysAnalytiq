@@ -42,6 +42,7 @@ db-shell:
 	docker-compose exec db psql -U postgres -d diploma
 
 test-back:
+	docker-compose up -d db app
 	docker-compose exec app python -m pytest
 
 test-back-local:
