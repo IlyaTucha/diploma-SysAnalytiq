@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { Notification } from '@/types/notification';
-import { notificationsApi, getAccessToken } from '@/lib/api';
+import { notificationsApi, adminApi, getAccessToken } from '@/lib/api';
 import { useAuth } from '@/components/contexts/AuthContext';
 
 const PUSH_ENABLED_KEY = 'pushNotificationsEnabled';
@@ -8,6 +8,7 @@ const PUSH_ENABLED_KEY = 'pushNotificationsEnabled';
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
+  pendingReviewsCount: number;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   refreshNotifications: () => void;
@@ -70,7 +71,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (permission !== 'granted') return;
     }
     setPushEnabledState(enabled);
-    try { localStorage.setItem(PUSH_ENABLED_KEY, String(enabled)); } catch {}
+    try { localStorage.setItem(PUSH_ENABLED_KEY, String(enabled)); } catch { /* localStorage недоступен */ }
   }, [pushSupported]);
 
   const loadNotifications = useCallback(() => {
@@ -93,26 +94,61 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       .catch(() => {});
   }, [isAdmin, pushEnabled]);
 
-  useEffect(() => {
-    if (!isAuthenticated || isAdmin) return;
-    loadNotifications();
+  // Для преподавателя — следим за новыми работами на проверку
+  const [pendingReviewsCount, setPendingReviewsCount] = useState(0);
+  const adminPendingIdsRef = useRef<Set<string>>(new Set());
+  const loadAdminPending = useCallback(() => {
+    if (!getAccessToken() || !isAdmin) return;
+    adminApi.submissions('pending')
+      .then((data: any[]) => {
+        const items = data || [];
+        const ids = new Set(items.map((s: any) => String(s.id)));
+        const prev = adminPendingIdsRef.current;
+        if (pushEnabled && prev.size > 0) {
+          const fresh = items.filter((s: any) => !prev.has(String(s.id)));
+          if (fresh.length === 1) {
+            const s = fresh[0];
+            const studentName = s.studentName || 'Студент';
+            sendBrowserNotification('Новая работа на проверку', studentName);
+          } else if (fresh.length > 1) {
+            sendBrowserNotification(
+              'Новые работы на проверку',
+              `${fresh.length} новых заданий ожидают проверки`,
+            );
+          }
+        }
+        adminPendingIdsRef.current = ids;
+        setPendingReviewsCount(items.length);
+      })
+      .catch(() => {});
+  }, [isAdmin, pushEnabled]);
 
-    // Поллинг каждые 60 секунд
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const tick = isAdmin ? loadAdminPending : loadNotifications;
+    tick();
+
     const interval = setInterval(() => {
-      if (getAccessToken()) loadNotifications();
-    }, 60000);
+      if (getAccessToken()) tick();
+    }, 30000);
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible' && getAccessToken()) {
-        loadNotifications();
+        tick();
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
+
+    // Мгновенное обновление после действий на стороне фронта (например, преподаватель завершил проверку)
+    const handleReviewsUpdated = () => tick();
+    window.addEventListener('reviews-updated', handleReviewsUpdated);
+
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('reviews-updated', handleReviewsUpdated);
     };
-  }, [isAuthenticated, isAdmin, loadNotifications]);
+  }, [isAuthenticated, isAdmin, loadNotifications, loadAdminPending]);
 
   // Не считаем "На повторной проверке" (pending) в счётчике
   const unreadCount = notifications.filter(n => !n.isRead && n.type !== 'pending').length;
@@ -132,7 +168,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   };
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, refreshNotifications: loadNotifications, pushEnabled, setPushEnabled, pushSupported, pushDenied }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, pendingReviewsCount, markAsRead, markAllAsRead, refreshNotifications: loadNotifications, pushEnabled, setPushEnabled, pushSupported, pushDenied }}>
       {children}
     </NotificationContext.Provider>
   );

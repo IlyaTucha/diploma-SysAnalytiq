@@ -4,41 +4,19 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/components/contexts/AuthContext';
 import { useTheme } from '@/components/contexts/ThemeProvider';
 import { useNotifications } from '@/components/contexts/NotificationContext';
-import { adminApi, getAccessToken } from '@/lib/api';
 
 export function AppSidebar() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { logout, isAdmin, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { unreadCount } = useNotifications();
+  const { unreadCount, pendingReviewsCount } = useNotifications();
 
   const notificationBadgeCount = isAdmin ? 0 : unreadCount;
-
-  const [pendingReviewsCount, setPendingReviewsCount] = useState(0);
-
-  useEffect(() => {
-    if (isAdmin) {
-      const loadCount = () => {
-        if (!getAccessToken()) return;
-        adminApi.submissions('pending')
-          .then(data => setPendingReviewsCount(data.length))
-          .catch(() => {});
-      };
-      loadCount();
-      const interval = setInterval(loadCount, 30000);
-      const onReviewsUpdated = () => loadCount();
-      window.addEventListener('reviews-updated', onReviewsUpdated);
-      return () => {
-        clearInterval(interval);
-        window.removeEventListener('reviews-updated', onReviewsUpdated);
-      };
-    }
-  }, [isAdmin]);
 
   const baseNavItems = [
     { icon: <BookOpen className="w-5 h-5" />, label: 'Модули', path: '/modules' },
