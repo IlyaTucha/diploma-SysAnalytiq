@@ -143,5 +143,5 @@ NINJA_JWT = {
 
 # AI Check settings
 OPENROUTER_MODEL = os.environ.get('OPENROUTER_MODEL', 'deepseek/deepseek-chat-v3-0324')
-OPENROUTER_MAX_TOKENS = int(os.environ.get('OPENROUTER_MAX_TOKENS', '2048'))
+OPENROUTER_MAX_TOKENS = int(os.environ.get('OPENROUTER_MAX_TOKENS', '8192'))
 OPENROUTER_TEMPERATURE = float(os.environ.get('OPENROUTER_TEMPERATURE', '0.3'))

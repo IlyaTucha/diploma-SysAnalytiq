@@ -49,8 +49,26 @@ export function SqlLessonView({ lesson }: SqlLessonViewProps) {
     editorRef.current = editor;
   };
 
+  const detectDestructiveSql = (sql: string): string | null => {
+    const cleaned = sql
+      .replace(/--.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+    const match = cleaned.match(
+      /\b(DROP|DELETE|UPDATE|INSERT|ALTER|CREATE|TRUNCATE|REPLACE\s+INTO|MERGE|RENAME|GRANT|REVOKE|VACUUM|REINDEX|ATTACH|DETACH|PRAGMA)\b/i,
+    );
+    return match ? match[0].toUpperCase() : null;
+  };
   const handleRun = (code: string) => {
     if (!db) return;
+    const op = detectDestructiveSql(code);
+    if (op) {
+      setResult(null);
+      setValidationState('error');
+      setValidationMessage(
+        `В этом задании запрещено изменять схему или данные (обнаружена операция «${op}»). Разрешены только запросы SELECT.`,
+      );
+      return;
+    }
     const res = executeQuery(code);
     setResult(res);
     setValidationState('idle');

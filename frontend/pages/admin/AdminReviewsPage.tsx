@@ -336,13 +336,14 @@ export default function AdminReviews() {
             const severityLabel = severity === 'suggestion' ? 'Рекомендация'
               : severity === 'warning' ? 'Замечание'
               : 'Ошибка';
+            const fixLabel = severity === 'suggestion' ? 'Что можно улучшить' : 'Что нужно исправить';
 
             if (problem && fix) {
-              commentText = `${severityLabel}: ${problem}\n\nЧто нужно исправить: ${fix}`;
+              commentText = `${severityLabel}: ${problem}\n\n${fixLabel}: ${fix}`;
             } else if (problem) {
               commentText = `${severityLabel}: ${problem}`;
             } else if (fix) {
-              commentText = `Что нужно исправить: ${fix}`;
+              commentText = `${fixLabel}: ${fix}`;
             }
 
             return {

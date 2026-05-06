@@ -23,5 +23,8 @@ export interface Submission {
     reviewerName: string;
     reviewedAt: string;
     inlineComments: any[];
+    studentSolution?: string;
+    executionResult?: any;
+    isSelfPractice?: boolean;
   }>;
 }

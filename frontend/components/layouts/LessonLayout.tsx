@@ -171,6 +171,14 @@ export function LessonLayout({
     if (!lessonId) return;
     const extra = typeof submissionExtra === 'function' ? submissionExtra() : submissionExtra;
     try {
+      if (status === 'accepted') {
+        // Самостоятельная практика: сохраняем решение без отправки на проверку
+        await submissionsApi.create({ lessonId, studentSolution: code, ...extra });
+        await reloadSubmissions();
+        setIsVerified(false);
+        toast.success('Решение сохранено');
+        return;
+      }
       if (isAdmin || !user?.groupId) {
         // Админ или без группы: сохраняем решение, автоматически принимаем
         await submissionsApi.create({ lessonId, studentSolution: code, ...extra });
@@ -261,27 +269,35 @@ export function LessonLayout({
                   {showReviewHistory ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   <History className="w-4 h-4" />
                   <span>
-                    {reviewHistory.length} {getNoun(reviewHistory.length, 'проверка', 'проверки', 'проверок')}
+                    {reviewHistory.length} {getNoun(reviewHistory.length, 'решение', 'решения', 'решений')}
                   </span>
                 </button>
                 {showReviewHistory && (
                   <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                     {[...reviewHistory].reverse().map((entry: any, idx: number) => {
                       const attemptNum = reviewHistory.length - idx;
+                      const isSelfPractice = entry.isSelfPractice;
                       return (
                         <div
                           key={idx}
                           className="flex items-center gap-2 text-sm p-2 rounded-md bg-muted/50 border cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
                           onClick={() => setSelectedHistoryEntry(entry)}
                         >
-                          {entry.status === 'approved' ? (
+                          {isSelfPractice ? (
+                            <CheckCircle className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                          ) : entry.status === 'approved' ? (
                             <CheckCircle className="w-3.5 h-3.5 text-success flex-shrink-0" />
                           ) : (
                             <XCircle className="w-3.5 h-3.5 text-destructive flex-shrink-0" />
                           )}
                           <span className="font-medium">
-                            {attemptNum} попытка{idx === 0 ? ' (последняя)' : ''}
+                            {isSelfPractice
+                              ? `${attemptNum} отправка${idx === 0 ? ' (последняя)' : ''}`
+                              : `${attemptNum} попытка${idx === 0 ? ' (последняя)' : ''}`}
                           </span>
+                          {isSelfPractice && (
+                            <span className="text-xs text-muted-foreground ml-auto">самостоятельная</span>
+                          )}
                         </div>
                       );
                     })}
@@ -289,7 +305,7 @@ export function LessonLayout({
                 )}
               </div>
             )}
-            
+
         </div>
 
         <div className="pt-4 border-t flex flex-col gap-4 flex-shrink-0">
@@ -301,27 +317,27 @@ export function LessonLayout({
             </Alert>
           )}
 
-          <Button 
+          <Button
             variant="outline"
             onClick={handleCheckWrapper}
             className="w-full"
-            disabled={status === 'accepted'}
           >
             <CheckCircle className="w-4 h-4 mr-2" />
             {checkButtonText}
           </Button>
 
-          <Button 
+          <Button
             onClick={handleComplete}
             className={`w-full ${
               status === 'accepted' ? "bg-green-600 hover:bg-green-700 text-white" :
               status === 'pending' ? "bg-yellow-500 hover:bg-yellow-600 text-white" :
               status === 'rejected' ? "bg-red-600 hover:bg-red-700 text-white" : ""
             }`}
-            disabled={status === 'accepted' || !isVerified}
+            disabled={!isVerified}
           >
             <CheckCircle className="w-4 h-4 mr-2" />
             {
+              status === 'accepted' && isVerified ? 'Сохранить решение' :
               status === 'accepted' ? 'Задание принято' :
               status === 'pending' && isVerified ? 'Отправить решение' :
               status === 'pending' ? 'Ожидает проверки' :

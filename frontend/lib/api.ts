@@ -8,7 +8,7 @@ function camelToSnake(str: string): string {
   return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
 }
 
-const OPAQUE_KEYS = new Set(['execution_result', 'executionResult', 'review_history', 'reviewHistory']);
+const OPAQUE_KEYS = new Set(['execution_result', 'executionResult']);
 
 function convertKeys(obj: any, converter: (key: string) => string, isOpaque = false): any {
   if (isOpaque) return obj;

@@ -16,15 +16,11 @@ interface ReviewHistoryEntry {
   status: string;
   feedback: string;
   reviewerName?: string;
-  reviewer_name?: string;
   reviewedAt?: string;
-  reviewed_at?: string;
   inlineComments?: any[];
-  inline_comments?: any[];
   studentSolution?: string;
-  student_solution?: string;
   executionResult?: any;
-  execution_result?: any;
+  isSelfPractice?: boolean;
 }
 
 interface ReviewHistoryDialogProps {
@@ -39,11 +35,12 @@ export function ReviewHistoryDialog({ entry, studentName, lessonTitle, moduleId,
   const { modules: modulesData } = useData();
   const moduleName = modulesData.find(m => m.id === moduleId)?.title || '';
 
-  const reviewerName = entry?.reviewerName || entry?.reviewer_name || 'Преподаватель';
-  const reviewedAt = entry?.reviewedAt || entry?.reviewed_at;
-  const inlineComments = entry?.inlineComments || entry?.inline_comments || [];
-  const studentSolution = entry?.studentSolution || entry?.student_solution || '';
-  const executionResult = entry?.executionResult || entry?.execution_result || null;
+  const isSelfPractice = entry?.isSelfPractice;
+  const reviewerName = entry?.reviewerName || 'Преподаватель';
+  const reviewedAt = entry?.reviewedAt;
+  const inlineComments = entry?.inlineComments || [];
+  const studentSolution = entry?.studentSolution || '';
+  const executionResult = entry?.executionResult || null;
 
   const isBpmn = moduleName === MODULE_NAMES.BPMN;
   const isPlantUml = moduleName === MODULE_NAMES.PLANTUML;
@@ -99,8 +96,8 @@ export function ReviewHistoryDialog({ entry, studentName, lessonTitle, moduleId,
     if (inlineComments.length > 0) {
       const decos: any[] = [];
       inlineComments.forEach((c: any) => {
-        const ls = c.line_start || c.lineStart;
-        const le = c.line_end || c.lineEnd;
+        const ls = c.lineStart;
+        const le = c.lineEnd;
         const lineLabel = ls === le ? `Строка ${ls}` : `Строки ${ls}–${le}`;
         const commentText = (c.text || 'Комментарий к коду').replace(/\n/g, '\n\n');
         const hoverText = `**${lineLabel}**\n\n${commentText}`;
@@ -131,8 +128,8 @@ export function ReviewHistoryDialog({ entry, studentName, lessonTitle, moduleId,
         const lineNumber = e.target.position?.lineNumber;
         if (lineNumber) {
           const comment = inlineComments.find((c: any) => {
-            const ls = c.line_start || c.lineStart;
-            const le = c.line_end || c.lineEnd;
+            const ls = c.lineStart;
+            const le = c.lineEnd;
             return lineNumber >= ls && lineNumber <= le;
           });
           if (comment) {
@@ -228,7 +225,9 @@ export function ReviewHistoryDialog({ entry, studentName, lessonTitle, moduleId,
         <DialogTitle className="sr-only">История проверки</DialogTitle>
         <div className="p-6 border-b bg-muted/30 flex-shrink-0">
           <div className="flex items-center gap-3 mb-2">
-            {entry.status === 'approved' ? (
+            {isSelfPractice ? (
+              <Badge variant="secondary">Самостоятельная отправка</Badge>
+            ) : entry.status === 'approved' ? (
               <Badge className="bg-success text-success-foreground">Принято</Badge>
             ) : (
               <Badge variant="destructive">На доработке</Badge>
@@ -240,10 +239,12 @@ export function ReviewHistoryDialog({ entry, studentName, lessonTitle, moduleId,
               <User className="w-3.5 h-3.5" />
               <span>Студент: {studentName}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <CheckCircle className="w-3.5 h-3.5" />
-              <span>Проверил: {reviewerName}</span>
-            </div>
+            {!isSelfPractice && (
+              <div className="flex items-center gap-1">
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span>Проверил: {reviewerName}</span>
+              </div>
+            )}
             {reviewedAt && (
               <div className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5" />
@@ -293,8 +294,8 @@ export function ReviewHistoryDialog({ entry, studentName, lessonTitle, moduleId,
                 </h3>
                 <div className="space-y-2">
                   {inlineComments.map((c: any, idx: number) => {
-                    const ls = c.line_start || c.lineStart;
-                    const le = c.line_end || c.lineEnd;
+                    const ls = c.lineStart;
+                    const le = c.lineEnd;
                     return (
                       <div key={idx} data-comment-id={c.id || `comment-${idx}`} className="p-3 rounded-md border bg-background text-sm transition-all">
                         <div className="flex items-center gap-2 mb-1">
@@ -302,9 +303,9 @@ export function ReviewHistoryDialog({ entry, studentName, lessonTitle, moduleId,
                             {ls && le ? (ls === le ? `Строка ${ls}` : `Строки ${ls}–${le}`) : '—'}
                           </span>
                         </div>
-                        {(c.highlighted_text || c.highlightedText) && (
+                        {c.highlightedText && (
                           <code className="block mb-2 px-2 py-1 bg-muted rounded text-xs line-clamp-4 border-l-2 border-primary/30">
-                            {c.highlighted_text || c.highlightedText}
+                            {c.highlightedText}
                           </code>
                         )}
                         {c.text && <p className="text-sm whitespace-pre-wrap">{c.text}</p>}
