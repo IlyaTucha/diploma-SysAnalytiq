@@ -128,10 +128,11 @@ class UserService:
     def bind_telegram(user: User, data: dict) -> dict:
         """Привязка Telegram аккаунта к существующему пользователю (для уведомлений)."""
         bot_token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
-        if bot_token:
-            data_copy = dict(data)
-            if not UserService.verify_telegram_data(data_copy):
-                raise ValueError("Invalid Telegram auth data")
+        if not bot_token:
+            raise ValueError("Привязка Telegram временно недоступна")
+        data_copy = dict(data)
+        if not UserService.verify_telegram_data(data_copy):
+            raise ValueError("Invalid Telegram auth data")
 
         telegram_id = data['id']
         username = data.get('username', '')
