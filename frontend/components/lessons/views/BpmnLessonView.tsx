@@ -21,13 +21,13 @@ export function BpmnLessonView({ lesson }: BpmnLessonViewProps) {
   const handleCheck = async (code: string) => {
     setError(null);
     
-    if (!lesson?.slug) {
+    if (!lesson?.id) {
       setError('Идентификатор урока не найден');
       return false;
     }
-    
+
     try {
-      const response = await lessonsApi.validateSolution(lesson.slug, code);
+      const response = await lessonsApi.validateSolution(lesson.id, code);
       
       if (!response || !response.valid) {
         const msg = response?.error || 'Ошибка валидации решения';

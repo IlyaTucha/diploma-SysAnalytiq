@@ -47,9 +47,9 @@ def get_module_lessons(request, slug: str):
             lesson.correct_answer = None
     return lessons
 
-@router.get("/lessons/{slug}", response=LessonSchema)
-def get_lesson(request, slug: str):
-    lesson = EducationService.get_lesson(slug)
+@router.get("/lessons/{lesson_id}", response=LessonSchema)
+def get_lesson(request, lesson_id: str):
+    lesson = EducationService.get_lesson(lesson_id)
     if not _is_admin(request):
         lesson.correct_answer = None
     return lesson
@@ -61,18 +61,18 @@ def create_lesson(request, data: LessonCreateSchema):
     return EducationService.create_lesson(data)
 
 
-@router.put("/lessons/{slug}", response=LessonSchema, auth=JWTAuth())
-def update_lesson(request, slug: str, data: LessonUpdateSchema):
+@router.put("/lessons/{lesson_id}", response=LessonSchema, auth=JWTAuth())
+def update_lesson(request, lesson_id: str, data: LessonUpdateSchema):
     if not request.user.is_staff:
         raise HttpError(403, "Требуются права администратора")
-    return EducationService.update_lesson(slug, data)
+    return EducationService.update_lesson(lesson_id, data)
 
 
-@router.delete("/lessons/{slug}", auth=JWTAuth())
-def delete_lesson(request, slug: str):
+@router.delete("/lessons/{lesson_id}", auth=JWTAuth())
+def delete_lesson(request, lesson_id: str):
     if not request.user.is_staff:
         raise HttpError(403, "Требуются права администратора")
-    return EducationService.delete_lesson(slug)
+    return EducationService.delete_lesson(lesson_id)
 
 
 @router.post("/modules/{slug}/reorder", response=List[LessonSchema], auth=JWTAuth())
@@ -82,9 +82,9 @@ def reorder_lessons(request, slug: str, data: LessonReorderSchema):
     return EducationService.reorder_lessons(slug, data.lesson_ids)
 
 
-@router.post("/lessons/{slug}/validate")
-def validate_lesson_solution(request, slug: str, data: LessonValidateRequest):
-    lesson = EducationService.get_lesson(slug)
+@router.post("/lessons/{lesson_id}/validate")
+def validate_lesson_solution(request, lesson_id: str, data: LessonValidateRequest):
+    lesson = EducationService.get_lesson(lesson_id)
     if not lesson:
         raise HttpError(404, "Урок не найден")
     

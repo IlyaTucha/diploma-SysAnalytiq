@@ -4,19 +4,8 @@ from django.utils.text import slugify
 import uuid as uuid_mod
 
 
-def _find_lesson(identifier: str) -> Lesson:
-    """Ищет урок по slug, а если не найден — пробует по UUID."""
-    lesson = Lesson.objects.filter(slug=identifier).first()
-    if lesson:
-        return lesson
-    try:
-        uid = uuid_mod.UUID(identifier)
-        lesson = Lesson.objects.filter(id=uid).first()
-    except (ValueError, AttributeError):
-        pass
-    if lesson:
-        return lesson
-    return get_object_or_404(Lesson, slug=identifier)
+def _find_lesson(lesson_id: str) -> Lesson:
+    return get_object_or_404(Lesson, id=lesson_id)
 
 
 class EducationService:
@@ -29,8 +18,8 @@ class EducationService:
         return get_object_or_404(Module.objects.prefetch_related('lessons'), slug=slug)
 
     @staticmethod
-    def get_lesson(slug: str):
-        return _find_lesson(slug)
+    def get_lesson(lesson_id: str):
+        return _find_lesson(lesson_id)
 
     @staticmethod
     def get_lessons_by_module(module_slug: str):
@@ -63,16 +52,16 @@ class EducationService:
         return lesson
 
     @staticmethod
-    def update_lesson(lesson_slug, data):
-        lesson = _find_lesson(lesson_slug)
+    def update_lesson(lesson_id, data):
+        lesson = _find_lesson(lesson_id)
         for attr, value in data.dict(exclude_unset=True).items():
             setattr(lesson, attr, value)
         lesson.save()
         return lesson
 
     @staticmethod
-    def delete_lesson(lesson_slug):
-        lesson = _find_lesson(lesson_slug)
+    def delete_lesson(lesson_id):
+        lesson = _find_lesson(lesson_id)
         lesson.delete()
 
     @staticmethod

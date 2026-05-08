@@ -148,8 +148,8 @@ export const modulesApi = {
 };
 
 export const lessonsApi = {
-  get: (slug: string) => apiFetch<any>(`/lessons/${slug}`),
-  validateSolution: (slug: string, code: string) => apiFetch<any>(`/lessons/${slug}/validate`, {
+  get: (lessonId: string) => apiFetch<any>(`/lessons/${lessonId}`),
+  validateSolution: (lessonId: string, code: string) => apiFetch<any>(`/lessons/${lessonId}/validate`, {
     method: 'POST',
     body: JSON.stringify({ code })
   }),
@@ -158,13 +158,13 @@ export const lessonsApi = {
       method: 'POST',
       body: JSON.stringify(convertKeys(data, camelToSnake)),
     }),
-  update: (slug: string, data: any) =>
-    apiFetch<any>(`/lessons/${slug}`, {
+  update: (lessonId: string, data: any) =>
+    apiFetch<any>(`/lessons/${lessonId}`, {
       method: 'PUT',
       body: JSON.stringify(convertKeys(data, camelToSnake)),
     }),
-  delete: (slug: string) =>
-    apiFetch<any>(`/lessons/${slug}`, { method: 'DELETE' }),
+  delete: (lessonId: string) =>
+    apiFetch<any>(`/lessons/${lessonId}`, { method: 'DELETE' }),
   reorder: (moduleSlug: string, lessonIds: string[]) =>
     apiFetch<any>(`/modules/${moduleSlug}/reorder`, {
       method: 'POST',

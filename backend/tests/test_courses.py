@@ -30,14 +30,14 @@ def test_create_lesson_flow(admin_client):
     assert resp.status_code == 200
     lesson_data = resp.json()
     assert lesson_data["title"] == "Intro to Select"
-    slug = lesson_data["slug"]
+    lesson_id = lesson_data["id"]
 
-    resp = admin_client.get(f"/lessons/{slug}")
+    resp = admin_client.get(f"/lessons/{lesson_id}")
     assert resp.status_code == 200
     assert resp.json()["id"] == lesson_data["id"]
 
     resp = admin_client.put(
-        f"/lessons/{slug}",
+        f"/lessons/{lesson_id}",
         json={"title": "Intro to Select Updated"},
         **admin_client.auth_headers,
     )

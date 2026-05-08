@@ -76,10 +76,10 @@ export function SqlLessonView({ lesson }: SqlLessonViewProps) {
   };
 
   const handleCheck = async (code: string) => {
-    if (!lesson?.slug) return false;
-    
+    if (!lesson?.id) return false;
+
     try {
-      const response = await lessonsApi.validateSolution(lesson.slug, code);
+      const response = await lessonsApi.validateSolution(lesson.id, code);
       
       if (!response || !response.valid) {
         setValidationState('error');

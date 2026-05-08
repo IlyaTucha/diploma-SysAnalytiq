@@ -104,8 +104,7 @@ export default function AdminModuleContent() {
     if (!lesson) return;
 
     try {
-      const identifier = lesson.slug || lesson.id;
-      await lessonsApi.update(identifier, {
+      await lessonsApi.update(lesson.id, {
         title: lessonFormData.title,
         type: lessonFormData.type,
         content: lessonFormData.content,
@@ -127,8 +126,7 @@ export default function AdminModuleContent() {
     const lesson = lessons.find(l => l.id === id);
     if (!lesson) return;
     try {
-      const identifier = lesson.slug || lesson.id;
-      await lessonsApi.delete(identifier);
+      await lessonsApi.delete(lesson.id);
       setLessons(lessons.filter(l => l.id !== id));
       toast.success('Урок удален');
       reloadLessons();
