@@ -19,10 +19,6 @@ class NotificationSchema(Schema):
     lesson_title: Optional[str] = None
     lesson_path: Optional[str] = None
     reviewer: Optional[ReviewerSchema] = None
-    highlighted_code: Optional[str] = None
-    inline_comment: Optional[str] = None
-    start_line: Optional[int] = None
-    end_line: Optional[int] = None
     inline_comments: Optional[list] = None
     
     @staticmethod

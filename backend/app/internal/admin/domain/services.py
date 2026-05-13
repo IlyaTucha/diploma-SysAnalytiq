@@ -44,8 +44,6 @@ class AdminService:
             submission=submission,
         ).delete()
 
-        first_comment = inline_comments[0] if inline_comments else None
-
         Notification.objects.create(
             user=submission.student,
             reviewer=reviewer,
@@ -55,10 +53,6 @@ class AdminService:
             module_name=submission.lesson.module.title,
             lesson_title=submission.lesson.title,
             lesson_path=f"/modules/{submission.lesson.module.slug}/{submission.lesson.id}",
-            highlighted_code=first_comment['highlighted_text'] if first_comment else '',
-            inline_comment=first_comment['text'] if first_comment else '',
-            start_line=first_comment['line_start'] if first_comment else None,
-            end_line=first_comment['line_end'] if first_comment else None,
             inline_comments=inline_comments or [],
         )
 

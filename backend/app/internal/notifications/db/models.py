@@ -24,10 +24,6 @@ class Notification(models.Model):
     lesson_title = models.CharField(max_length=255, blank=True)
     lesson_path = models.CharField(max_length=255, blank=True)
 
-    highlighted_code = models.TextField(blank=True, default='')
-    inline_comment = models.TextField(blank=True, default='')
-    start_line = models.IntegerField(null=True, blank=True)
-    end_line = models.IntegerField(null=True, blank=True)
     inline_comments = models.JSONField(default=list, blank=True)
 
     def __str__(self):

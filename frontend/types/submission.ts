@@ -16,7 +16,6 @@ export interface Submission {
   executionResult?: any;
   comments?: string;
   inlineComments?: Comment[];
-  attemptCount?: number;
   reviewHistory?: Array<{
     status: string;
     feedback: string;

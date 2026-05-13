@@ -17,7 +17,6 @@ class SubmissionSchema(Schema):
     student_solution: str
     execution_result: Optional[Any] = None
     feedback: Optional[str] = None
-    attempt_count: int = 1
     review_history: List[Any] = []
     
     @staticmethod

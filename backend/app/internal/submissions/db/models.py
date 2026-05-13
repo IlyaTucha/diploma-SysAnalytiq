@@ -17,7 +17,6 @@ class Submission(models.Model):
     student_solution = models.TextField()
     execution_result = models.JSONField(blank=True, null=True)
     feedback = models.TextField(blank=True, null=True)
-    attempt_count = models.IntegerField(default=1)
     review_history = models.JSONField(default=list, blank=True)
 
     def __str__(self):
