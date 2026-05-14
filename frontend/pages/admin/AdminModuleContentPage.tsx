@@ -19,6 +19,7 @@ function mapLesson(l: any) {
     title: l.title,
     type: l.type,
     content: l.content || '',
+    initialCode: l.initialCode || '',
     correctAnswer: l.correctAnswer || '',
     hint: l.hint || '',
     published: l.published,
@@ -53,6 +54,7 @@ export default function AdminModuleContent() {
     title: '',
     type: 'theory',
     content: '',
+    initialCode: '',
     correctAnswer: '',
     hint: '',
     published: false,
@@ -80,12 +82,13 @@ export default function AdminModuleContent() {
         title: lessonFormData.title,
         type: lessonFormData.type,
         content: lessonFormData.content,
+        initialCode: lessonFormData.initialCode || undefined,
         correctAnswer: lessonFormData.correctAnswer || undefined,
         hint: lessonFormData.hint || undefined,
         published: lessonFormData.published,
       });
       await reloadLessons();
-      setLessonFormData({ title: '', type: 'theory', content: '', correctAnswer: '', hint: '', published: false });
+      setLessonFormData({ title: '', type: 'theory', content: '', initialCode: '', correctAnswer: '', hint: '', published: false });
       setErrors({});
       setIsCreatingLesson(false);
       toast.success('Урок успешно создан!');
@@ -108,11 +111,12 @@ export default function AdminModuleContent() {
         title: lessonFormData.title,
         type: lessonFormData.type,
         content: lessonFormData.content,
+        initialCode: lessonFormData.initialCode || '',
         correctAnswer: lessonFormData.correctAnswer || undefined,
         hint: lessonFormData.hint || undefined,
         published: lessonFormData.published,
       });
-      setLessonFormData({ title: '', type: 'theory', content: '', correctAnswer: '', hint: '', published: false });
+      setLessonFormData({ title: '', type: 'theory', content: '', initialCode: '', correctAnswer: '', hint: '', published: false });
       setErrors({});
       setEditingLessonId(null);
       toast.success('Урок обновлен!');
@@ -155,6 +159,7 @@ export default function AdminModuleContent() {
         title: lesson.title,
         type: lesson.type,
         content: lesson.content,
+        initialCode: lesson.initialCode || '',
         correctAnswer: lesson.correctAnswer || '',
         hint: lesson.hint || '',
         published: lesson.published,
@@ -211,6 +216,7 @@ export default function AdminModuleContent() {
                     title: '',
                     type: 'theory',
                     content: '',
+                    initialCode: '',
                     correctAnswer: '',
                     hint: '',
                     published: false,

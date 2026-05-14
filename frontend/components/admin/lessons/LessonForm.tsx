@@ -18,6 +18,7 @@ interface LessonFormData {
   title: string;
   type: string;
   content: string;
+  initialCode: string;
   correctAnswer: string;
   hint: string;
   published: boolean;
@@ -155,6 +156,21 @@ export function LessonForm({ formData, setFormData, onSubmit, onCancel, title, m
                 hasError={errors.correctAnswer}
               />
             ) : null}
+
+            <div>
+              <Label htmlFor="lesson-initial-code">Начальный код в редакторе</Label>
+              <Textarea
+                id="lesson-initial-code"
+                value={formData.initialCode}
+                onChange={(e) => setFormData({ ...formData, initialCode: e.target.value })}
+                placeholder="Шаблон, с которого студент начинает решение (необязательно)"
+                className="mt-1 font-mono bg-background text-foreground"
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Если не задано, редактор откроется пустым.
+              </p>
+            </div>
 
             <div>
               <Label htmlFor="lesson-hint">Подсказка</Label>

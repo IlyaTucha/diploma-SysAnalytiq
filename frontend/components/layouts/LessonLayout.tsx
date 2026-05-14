@@ -11,9 +11,10 @@ import {
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb';
 
-import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle, Lightbulb, History, XCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, CheckCircle, Lightbulb, History, XCircle, Moon, Sun } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from "sonner";
+import { useTheme } from '@/components/contexts/ThemeProvider';
 import { getNoun } from '@/components/ui/utils';
 import {
   ResizableHandle,
@@ -112,6 +113,7 @@ export function LessonLayout({
   const { user, isAdmin } = useAuth();
   const { completedLessons, markLessonCompleted } = useProgress();
   const { refreshNotifications } = useNotifications();
+  const { theme, toggleTheme } = useTheme();
 
   // Загружаем сохранённое решение из submissions
   const existingSubmission = lessonId ? submissions.find(s => s.lessonId === lessonId) : undefined;
@@ -387,6 +389,23 @@ export function LessonLayout({
           </Breadcrumb>
 
           <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleTheme}
+                  aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
+                  className="h-9 w-9"
+                >
+                  {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}</p>
+              </TooltipContent>
+            </Tooltip>
+
             <Link to={backLink || defaultBackLink}>
               <Button variant="outline" size="sm" className="gap-2">
                 <ChevronLeft className="w-4 h-4" />

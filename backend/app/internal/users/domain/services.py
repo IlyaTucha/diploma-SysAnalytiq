@@ -144,7 +144,12 @@ class UserService:
         user.telegram_id = telegram_id
         user.telegram_username = username
         user.save(update_fields=['telegram_id', 'telegram_username'])
-        return UserService.get_user_dto(user)
+        # Импорт здесь, чтобы избежать кругового импорта на старте Django
+        from app.internal.telegram.service import TelegramService
+        can_receive = TelegramService.send_welcome_message(user)
+        dto = UserService.get_user_dto(user)
+        dto['telegram_can_receive'] = can_receive
+        return dto
 
     @staticmethod
     def unbind_telegram(user: User) -> dict:

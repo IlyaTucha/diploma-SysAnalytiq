@@ -92,13 +92,20 @@ export default function AdminReviews() {
     if (!getAccessToken()) return;
     loadSubmissions();
     groupsApi.list().then((data) => setGroups(data as unknown as Group[])).catch(() => {});
+    const refresh = () => {
+      if (getAccessToken()) loadSubmissions();
+    };
+    const interval = setInterval(refresh, 30000);
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible' && getAccessToken()) {
-        loadSubmissions();
-      }
+      if (document.visibilityState === 'visible') refresh();
     };
     document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', refresh);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', refresh);
+    };
   }, [loadSubmissions]);
 
   const filteredSubmissions = submissions.filter(s => {

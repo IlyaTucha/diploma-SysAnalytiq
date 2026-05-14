@@ -74,21 +74,29 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     try { localStorage.setItem(PUSH_ENABLED_KEY, String(enabled)); } catch { /* localStorage недоступен */ }
   }, [pushSupported]);
 
+  // ID, для которых уже отправили браузерное уведомление в этой сессии — защита от дублей при гонке параллельных запросов
+  const notifiedNotifIdsRef = useRef<Set<string>>(new Set());
   const loadNotifications = useCallback(() => {
     if (!getAccessToken() || isAdmin) return;
     notificationsApi.list()
       .then(data => {
         const mapped = data.map(mapApiNotification);
+        const ids = new Set(mapped.map(n => n.id));
         // Отправляем браузерное уведомление для новых непрочитанных
         if (pushEnabled && prevIdsRef.current.size > 0) {
           for (const n of mapped) {
-            if (!n.isRead && n.type !== 'pending' && !prevIdsRef.current.has(n.id)) {
+            if (!n.isRead && n.type !== 'pending' && !prevIdsRef.current.has(n.id) && !notifiedNotifIdsRef.current.has(n.id)) {
+              notifiedNotifIdsRef.current.add(n.id);
               const typeLabel = n.type === 'approved' ? 'Работа принята' : n.type === 'rejected' ? 'Работа отклонена' : 'Уведомление';
               sendBrowserNotification(typeLabel, n.lessonTitle || n.generalComment || '');
             }
           }
         }
-        prevIdsRef.current = new Set(mapped.map(n => n.id));
+        // Чистим память: убираем id, которых больше нет в выдаче сервера
+        for (const id of Array.from(notifiedNotifIdsRef.current)) {
+          if (!ids.has(id)) notifiedNotifIdsRef.current.delete(id);
+        }
+        prevIdsRef.current = ids;
         setNotifications(mapped);
       })
       .catch(() => {});
@@ -97,6 +105,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Для преподавателя — следим за новыми работами на проверку
   const [pendingReviewsCount, setPendingReviewsCount] = useState(0);
   const adminPendingIdsRef = useRef<Set<string>>(new Set());
+  const notifiedAdminIdsRef = useRef<Set<string>>(new Set());
   const loadAdminPending = useCallback(() => {
     if (!getAccessToken() || !isAdmin) return;
     adminApi.submissions('pending')
@@ -105,7 +114,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const ids = new Set(items.map((s: any) => String(s.id)));
         const prev = adminPendingIdsRef.current;
         if (pushEnabled && prev.size > 0) {
-          const fresh = items.filter((s: any) => !prev.has(String(s.id)));
+          const fresh = items.filter((s: any) => {
+            const id = String(s.id);
+            return !prev.has(id) && !notifiedAdminIdsRef.current.has(id);
+          });
+          // Сразу помечаем, что уведомление по этим id отправлено — даже если параллельный запрос увидит то же fresh
+          for (const s of fresh) notifiedAdminIdsRef.current.add(String(s.id));
           if (fresh.length === 1) {
             const s = fresh[0];
             const studentName = s.studentName || 'Студент';
@@ -116,6 +130,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
               `${fresh.length} новых заданий ожидают проверки`,
             );
           }
+        }
+        // Чистим память: убираем id, которых больше нет в pending (работа проверена/удалена)
+        for (const id of Array.from(notifiedAdminIdsRef.current)) {
+          if (!ids.has(id)) notifiedAdminIdsRef.current.delete(id);
         }
         adminPendingIdsRef.current = ids;
         setPendingReviewsCount(items.length);
@@ -139,6 +157,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
+    // Возврат фокуса в окно — на случай, если setInterval затроттлен браузером
+    const handleFocus = () => {
+      if (getAccessToken()) tick();
+    };
+    window.addEventListener('focus', handleFocus);
+
     // Мгновенное обновление после действий на стороне фронта (например, преподаватель завершил проверку)
     const handleReviewsUpdated = () => tick();
     window.addEventListener('reviews-updated', handleReviewsUpdated);
@@ -146,6 +170,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
       window.removeEventListener('reviews-updated', handleReviewsUpdated);
     };
   }, [isAuthenticated, isAdmin, loadNotifications, loadAdminPending]);

@@ -25,11 +25,15 @@ class TelegramService:
 
     @staticmethod
     def send_message(chat_id, text, parse_mode='HTML', reply_markup=None):
-        """Отправляет сообщение через Telegram Bot API."""
+        """Отправляет сообщение через Telegram Bot API.
+
+        Возвращает True при успешной доставке, False при любой ошибке
+        (например, бот ещё не может писать пользователю первым — 403 Forbidden).
+        """
         token = TelegramService._get_token()
         if not token:
             logger.warning("TELEGRAM_BOT_TOKEN not set, skipping notification")
-            return None
+            return False
 
         url = f"{TELEGRAM_API.format(token=token)}/sendMessage"
         payload = {
@@ -44,10 +48,29 @@ class TelegramService:
         try:
             resp = requests.post(url, json=payload, timeout=10)
             resp.raise_for_status()
-            return resp.json()
+            return True
         except Exception as e:
             logger.error(f"Telegram send_message error: {e}")
-            return None
+            return False
+
+    @staticmethod
+    def send_welcome_message(user):
+        """Приветственное сообщение после привязки Telegram.
+
+        Возвращает True, если бот смог написать пользователю первым
+        (т. е. в Login Widget пользователь разрешил боту писать ему,
+        либо ранее уже нажимал Start у бота). False — если Telegram
+        отверг отправку: в этом случае фронт должен показать пользователю
+        инструкцию открыть бота и нажать Start.
+        """
+        if not user.telegram_id:
+            return False
+        text = (
+            "👋 <b>Привет!</b> Telegram-аккаунт привязан к платформе SysAnalytiq.\n\n"
+            "Здесь вы будете получать уведомления о проверке заданий. "
+            "Включить или выключить их можно в настройках профиля."
+        )
+        return TelegramService.send_message(user.telegram_id, text)
 
     @staticmethod
     def notify_student_review(submission, status, feedback, inline_comments, reviewer):
@@ -228,16 +251,20 @@ class TelegramService:
 
     @staticmethod
     def send_toggle_confirmation(user, enabled):
-        """Подтверждение включения/выключения уведомлений."""
+        """Подтверждение включения/выключения уведомлений.
+
+        Возвращает True, если сообщение успешно ушло пользователю,
+        иначе False (например, бот ещё не может писать пользователю первым).
+        """
         if not user.telegram_id:
-            return
+            return False
 
         if enabled:
             text = "🔔 Уведомления включены! Теперь вы будете получать уведомления о проверке заданий."
         else:
             text = "🔕 Уведомления отключены. Вы больше не будете получать уведомления."
 
-        TelegramService.send_message(user.telegram_id, text)
+        return TelegramService.send_message(user.telegram_id, text)
 
 
 def _user_link(user):

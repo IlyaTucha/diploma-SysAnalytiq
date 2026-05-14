@@ -44,6 +44,20 @@ export default function SettingsPage() {
   const notificationsEnabled = user?.telegramNotifications ?? false;
   const telegramBound = !!user?.telegramUsername;
 
+  const showBotActivationHint = () => {
+    const botName = import.meta.env.VITE_TELEGRAM_BOT_NAME || 'SysAnalytiqBot';
+    toast.info(
+      'Чтобы получать уведомления, откройте чат с ботом и нажмите Start',
+      {
+        duration: 10000,
+        action: {
+          label: 'Открыть бота',
+          onClick: () => window.open(`https://t.me/${botName}`, '_blank', 'noopener,noreferrer'),
+        },
+      },
+    );
+  };
+
   const handleToggleNotifications = async () => {
     if (!user) return;
     setToggling(true);
@@ -54,10 +68,14 @@ export default function SettingsPage() {
         ...user,
         telegramNotifications: updatedUser.telegramNotifications ?? newEnabled,
       });
-      toast.success(newEnabled
-        ? 'Telegram уведомления включены'
-        : 'Telegram уведомления отключены'
-      );
+      if (newEnabled && updatedUser.telegramCanReceive === false) {
+        showBotActivationHint();
+      } else {
+        toast.success(newEnabled
+          ? 'Telegram уведомления включены'
+          : 'Telegram уведомления отключены'
+        );
+      }
     } catch {
       toast.error('Не удалось изменить настройку уведомлений');
     } finally {
@@ -105,6 +123,9 @@ export default function SettingsPage() {
           telegramNotifications: updated.telegramNotifications ?? false,
         });
         toast.success('Telegram аккаунт привязан!');
+        if (updated.telegramCanReceive === false) {
+          showBotActivationHint();
+        }
       } catch (err: any) {
         const message = err?.detail || err?.message || 'Ошибка привязки Telegram';
         toast.error(message);

@@ -45,5 +45,10 @@ def toggle_telegram_notifications(request, data: ToggleNotificationsSchema):
         raise HttpError(400, "Telegram аккаунт не привязан")
     user.telegram_notifications = data.enabled
     user.save(update_fields=['telegram_notifications'])
-    TelegramService.send_toggle_confirmation(user, data.enabled)
-    return UserService.get_user_dto(user)
+    delivered = TelegramService.send_toggle_confirmation(user, data.enabled)
+    dto = UserService.get_user_dto(user)
+    # Поле важно только при включении: если бот не смог написать,
+    # фронт подскажет пользователю открыть бота и нажать Start.
+    if data.enabled:
+        dto['telegram_can_receive'] = delivered
+    return dto

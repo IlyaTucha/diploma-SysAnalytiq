@@ -50,7 +50,7 @@ export const AdminGroupsPage = () => {
       .then(newGroup => {
         setGroups(prev => [...prev, newGroup as unknown as Group]);
         setIsDialogOpen(false);
-        toast.success(`Группа ${name} успешно создана`);
+        toast.success(`Группа «${name}» успешно создана`);
       })
       .catch((err) => toast.error(err?.message || 'Ошибка создания группы'));
   };
@@ -157,7 +157,7 @@ export const AdminGroupsPage = () => {
         isOpen={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         title="Вы уверены?"
-        description={`Это действие нельзя отменить. Группа "${editingGroup?.name}" будет удалена, а все студенты будут исключены из неё.`}
+        description={`Это действие нельзя отменить. Группа «${editingGroup?.name}» будет удалена, а все студенты будут исключены из неё.`}
         onConfirm={handleDeleteGroup}
         confirmText="Удалить"
         variant="destructive"

@@ -66,7 +66,7 @@ export function EditGroupDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg flex flex-col max-h-[85vh]">
         <DialogHeader>
-          <DialogTitle>Управление группой {group.name}</DialogTitle>
+          <DialogTitle>Управление группой «{group.name}»</DialogTitle>
           <DialogDescription>
             Пароль группы и управление составом
           </DialogDescription>
@@ -119,7 +119,7 @@ export function EditGroupDialog({
           <p className="text-xs text-muted-foreground">Оставьте пустым, если пароль не требуется</p>
         </form>
 
-        <ScrollArea className="flex-1 pr-4 mt-2 h-[50vh]">
+        <ScrollArea className="flex-1 min-h-0 pr-4 mt-2">
           <div className="space-y-2">
             <div className="flex items-center justify-between mb-2">
                <h3 className="text-sm font-medium text-muted-foreground">
@@ -159,7 +159,7 @@ export function EditGroupDialog({
           </div>
         </ScrollArea>
         
-        <div className="mt-4 pt-4 border-t border-border flex justify-end">
+        <div className="mt-4 pt-4 border-t border-border flex justify-end flex-shrink-0">
             <Button 
               variant="destructive" 
               onClick={onDeleteGroup}

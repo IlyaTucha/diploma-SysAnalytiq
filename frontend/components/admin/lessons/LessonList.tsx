@@ -116,6 +116,7 @@ export function LessonList({
                     title: '',
                     type: 'theory',
                     content: '',
+                    initialCode: '',
                     correctAnswer: '',
                     hint: '',
                     published: false,
