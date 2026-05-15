@@ -83,7 +83,7 @@ export function PlantUmlEditorPanel({
       } as any);
 
       monaco.languages.registerCompletionItemProvider('plantuml', {
-        provideCompletionItems: (model, position) => {
+        provideCompletionItems: (model: any, position: any) => {
           const word = model.getWordUntilPosition(position);
           const range = {
             startLineNumber: position.lineNumber,
