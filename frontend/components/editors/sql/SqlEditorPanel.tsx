@@ -22,6 +22,59 @@ interface SqlEditorPanelProps {
   validationState?: 'idle' | 'success' | 'error';
   validationMessage?: string | null;
   height?: string | number;
+  schema?: Record<string, string[]>;
+}
+
+// Module-level state for SQL completion provider — registered once globally,
+// reads from currentSqlSchema which is updated by each editor instance.
+let sqlCompletionRegistered = false;
+let currentSqlSchema: Record<string, string[]> = {};
+let currentRunQuery: ((query: string) => void) | null = null;
+let previewTableCommandId: string | null = null;
+
+function registerSqlCompletions(monaco: any) {
+  if (sqlCompletionRegistered) return;
+  sqlCompletionRegistered = true;
+
+  monaco.languages.registerCompletionItemProvider('sql', {
+    triggerCharacters: [' ', '.', '\n'],
+    provideCompletionItems: (model: any, position: any) => {
+      const word = model.getWordUntilPosition(position);
+      const range = {
+        startLineNumber: position.lineNumber,
+        endLineNumber: position.lineNumber,
+        startColumn: word.startColumn,
+        endColumn: word.endColumn,
+      };
+      const suggestions: any[] = [];
+      for (const [table, cols] of Object.entries(currentSqlSchema)) {
+        suggestions.push({
+          label: table,
+          kind: monaco.languages.CompletionItemKind.Class,
+          insertText: table,
+          detail: 'таблица — Tab покажет превью',
+          range,
+          command: previewTableCommandId
+            ? {
+                id: previewTableCommandId,
+                title: 'preview',
+                arguments: [`SELECT * FROM ${table} LIMIT 10;`],
+              }
+            : undefined,
+        });
+        for (const col of cols) {
+          suggestions.push({
+            label: col,
+            kind: monaco.languages.CompletionItemKind.Field,
+            insertText: col,
+            detail: `колонка таблицы ${table}`,
+            range,
+          });
+        }
+      }
+      return { suggestions };
+    },
+  });
 }
 
 export function SqlEditorPanel({
@@ -34,15 +87,34 @@ export function SqlEditorPanel({
   readOnly = false,
   validationState,
   validationMessage,
-  height = "100%"
+  height = "100%",
+  schema,
 }: SqlEditorPanelProps) {
   const { theme } = useTheme();
   const editorRef = useRef<any>(null);
 
+  // Keep module-level schema and run-query callback in sync with current editor
+  if (schema) {
+    currentSqlSchema = schema;
+  }
+  currentRunQuery = handleRunQuery ?? null;
+
   const handleEditorOnMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
 
-    // Ensure all SQL keywords (JOIN, ON, etc.) are colored uniformly
+    registerSqlCompletions(monaco);
+
+    // Register a per-editor command that previews a table by running
+    // `SELECT * FROM <table> LIMIT 10` and updating the result panel without
+    // changing the editor content. Linked to the table-name completion item.
+    if (!previewTableCommandId) {
+      previewTableCommandId = editor.addCommand(0, (_ctx: any, query: string) => {
+        currentRunQuery?.(query);
+      }, '') ?? null;
+    }
+
+    // Ensure all SQL keywords (JOIN, ON, etc.) are colored uniformly,
+    // and identifiers (table/column names) are visually distinct from keywords.
     monaco.editor.defineTheme('sql-dark', {
       base: 'vs-dark',
       inherit: true,
@@ -55,6 +127,8 @@ export function SqlEditorPanel({
         { token: 'string', foreground: '98C379' },
         { token: 'string.double', foreground: '98C379' },
         { token: 'string.escape', foreground: '56B6C2' },
+        { token: 'identifier', foreground: 'D4D4D4' },
+        { token: 'identifier.sql', foreground: 'D4D4D4' },
       ],
       colors: {},
     });
@@ -67,6 +141,8 @@ export function SqlEditorPanel({
         { token: 'keyword.block.sql', foreground: '0000FF' },
         { token: 'operator.sql', foreground: '0000FF' },
         { token: 'predefined.sql', foreground: '0000FF' },
+        { token: 'identifier', foreground: '000000' },
+        { token: 'identifier.sql', foreground: '000000' },
       ],
       colors: {},
     });

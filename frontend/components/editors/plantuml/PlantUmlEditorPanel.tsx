@@ -34,6 +34,87 @@ export function PlantUmlEditorPanel({
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {
     editorRef.current = editor;
 
+    if (!monaco.languages.getLanguages().some((lang: any) => lang.id === 'plantuml')) {
+      monaco.languages.register({ id: 'plantuml' });
+      monaco.languages.setMonarchTokensProvider('plantuml', {
+        directives: ['@startuml', '@enduml', '@startmindmap', '@endmindmap', '@startgantt', '@endgantt', '@startsalt', '@endsalt'],
+        keywords: [
+          'class', 'abstract', 'interface', 'enum', 'annotation', 'object',
+          'package', 'namespace', 'component', 'node', 'database', 'folder',
+          'frame', 'cloud', 'storage', 'rectangle', 'card', 'queue', 'stack',
+          'actor', 'participant', 'boundary', 'control', 'entity', 'collections',
+          'state', 'usecase', 'note', 'legend', 'title', 'header', 'footer',
+          'caption', 'skinparam', 'hide', 'show', 'as', 'end', 'extends',
+          'implements', 'left', 'right', 'over', 'of', 'to', 'on', 'link',
+          'activate', 'deactivate', 'destroy', 'create', 'autonumber', 'newpage',
+          'alt', 'else', 'opt', 'loop', 'par', 'break', 'critical', 'group',
+          'ref', 'if', 'then', 'elseif', 'endif', 'while', 'endwhile',
+          'repeat', 'fork', 'again', 'partition', 'start', 'stop', 'detach',
+        ],
+        modifiers: ['public', 'private', 'protected', 'static', 'abstract', 'final'],
+        tokenizer: {
+          root: [
+            [/'.*$/, 'comment'],
+            [/\/'/, { token: 'comment', next: '@blockComment' }],
+            [/"[^"]*"/, 'string'],
+            [/@[a-zA-Z]+/, {
+              cases: {
+                '@directives': 'keyword.directive',
+                '@default': 'identifier',
+              },
+            }],
+            [/(?:<\|--|--\|>|\*--|--\*|o--|--o|<--|-->|<\.\.|\.\.>|<-|->|<\.|\.>|--|\.\.)/, 'operator'],
+            [/[{}()[\]]/, 'delimiter.bracket'],
+            [/[a-zA-Z_]\w*/, {
+              cases: {
+                '@keywords': 'keyword',
+                '@modifiers': 'keyword.modifier',
+                '@default': 'identifier',
+              },
+            }],
+            [/\d+/, 'number'],
+            [/[:;,.]/, 'delimiter'],
+          ],
+          blockComment: [
+            [/'\//, { token: 'comment', next: '@pop' }],
+            [/./, 'comment'],
+          ],
+        },
+      } as any);
+
+      monaco.languages.registerCompletionItemProvider('plantuml', {
+        provideCompletionItems: (model, position) => {
+          const word = model.getWordUntilPosition(position);
+          const range = {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: word.startColumn,
+            endColumn: word.endColumn,
+          };
+          const suggestions = [
+            '@startuml', '@enduml', 'class', 'interface', 'abstract', 'enum',
+            'package', 'namespace', 'note', 'actor', 'participant', 'boundary',
+            'control', 'entity', 'database', 'usecase', 'state', 'activate',
+            'deactivate', 'alt', 'else', 'opt', 'loop', 'par', 'group', 'ref',
+            'if', 'then', 'elseif', 'endif', 'while', 'endwhile', 'repeat',
+            'fork', 'again', 'start', 'stop', 'skinparam', 'title', 'legend',
+            'extends', 'implements',
+          ].map((kw) => ({
+            label: kw,
+            kind: monaco.languages.CompletionItemKind.Keyword,
+            insertText: kw,
+            range,
+          }));
+          return { suggestions };
+        },
+      });
+    }
+
+    const model = editor.getModel();
+    if (model) {
+      monaco.editor.setModelLanguage(model, 'plantuml');
+    }
+
     // Listen to content changes and propagate to parent
     editor.onDidChangeModelContent(() => {
       const value = editor.getValue();
@@ -85,7 +166,7 @@ export function PlantUmlEditorPanel({
               <div className="h-full flex flex-col p-0">
                 <Editor
                   height="100%"
-                  defaultLanguage="java" // PlantUML syntax highlighting
+                  defaultLanguage="plantuml"
                   defaultValue={code}
                   onMount={handleEditorMount}
                   theme={theme === 'dark' ? 'vs-dark' : 'light'}

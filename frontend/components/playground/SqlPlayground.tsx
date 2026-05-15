@@ -111,6 +111,9 @@ export default function SqlPlayground() {
             handleEditorDidMount={handleEditorDidMount}
             validationState={runnerError ? 'error' : 'idle'}
             validationMessage={runnerError}
+            schema={Object.fromEntries(
+              Object.entries(mockDatasets).map(([t, rows]) => [t, Object.keys((rows as any[])[0] || {})])
+            )}
           />
         </ResizablePanel>
       </ResizablePanelGroup>
