@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Group } from '@/types/group';
 import { User } from '@/types/user';
@@ -119,7 +118,7 @@ export function EditGroupDialog({
           <p className="text-xs text-muted-foreground">Оставьте пустым, если пароль не требуется</p>
         </form>
 
-        <ScrollArea className="flex-1 min-h-0 pr-4 mt-2">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4 mt-2">
           <div className="space-y-2">
             <div className="flex items-center justify-between mb-2">
                <h3 className="text-sm font-medium text-muted-foreground">
@@ -157,7 +156,7 @@ export function EditGroupDialog({
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
         
         <div className="mt-4 pt-4 border-t border-border flex justify-end flex-shrink-0">
             <Button 
