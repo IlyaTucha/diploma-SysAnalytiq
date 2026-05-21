@@ -33,6 +33,7 @@ export function setAccessToken(access: string) {
 
 export function clearTokens() {
   localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
 }
 
 async function refreshAccessToken(): Promise<string | null> {
