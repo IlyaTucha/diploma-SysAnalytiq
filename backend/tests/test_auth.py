@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import patch
 
+from ninja_jwt.tokens import RefreshToken
+
 from app.internal.users.db.models import User
 
 @pytest.mark.django_db
@@ -22,7 +24,8 @@ def test_vk_login_success(mock_vk_user_info, api_client):
     assert response.status_code == 200
     data = response.json()
     assert "access" in data
-    assert "refresh" in data
+    assert "refresh" not in data
+    assert response.cookies.get("refresh_token") is not None
     assert data["user"]["first_name"] == "Иван"
     assert data["user"]["last_name"] == "Петров"
     assert data["user"]["vk_profile_url"] == "https://vk.com/id123456789"
@@ -61,6 +64,22 @@ def test_vk_login_updates_existing_user(mock_vk_user_info, api_client):
     assert data["user"]["last_name"] == "Сидоров"
     assert data["user"]["avatar"] == "https://vk.com/new_avatar.jpg"
     assert User.objects.filter(vk_id=111222333).count() == 1
+
+@pytest.mark.django_db
+def test_logout_blacklists_refresh_token(api_client):
+    user = User.objects.create_user(username="vk_555", vk_id=555)
+    raw = str(RefreshToken.for_user(user))
+
+    ok = api_client.post("/auth/refresh", COOKIES={"refresh_token": raw})
+    assert ok.status_code == 200
+    assert "access" in ok.json()
+
+    out = api_client.post("/auth/logout", COOKIES={"refresh_token": raw})
+    assert out.status_code == 200
+
+    after = api_client.post("/auth/refresh", COOKIES={"refresh_token": raw})
+    assert after.status_code == 401
+
 
 @pytest.mark.django_db
 def test_me_endpoint(user_client):

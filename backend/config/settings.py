@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'ninja_extra',
+    'ninja_jwt.token_blacklist',
     'app',
 ]
 
@@ -132,6 +133,8 @@ VK_APP_ID = os.environ.get('VK_APP_ID', '')
 VK_APP_SECRET = os.environ.get('VK_APP_SECRET', '')
 
 SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1')
+
+REFRESH_COOKIE_SECURE = SITE_URL.startswith('https')
 
 OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
 

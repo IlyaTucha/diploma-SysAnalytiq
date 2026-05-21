@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types/user';
-import { authApi, setTokens, clearTokens, getAccessToken } from '@/lib/api';
+import { authApi, setAccessToken, clearTokens, getAccessToken } from '@/lib/api';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (vkData: any) => {
     const res = await authApi.vkLogin(vkData);
-    setTokens(res.access, res.refresh);
+    setAccessToken(res.access);
 
     const userData = mapUserData(res.user);
     setUser(userData);
@@ -48,11 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    clearTokens();
-    localStorage.removeItem('user');
-    localStorage.removeItem('completedLessons');
-    // Полная перезагрузка — сбросит все React-контексты (DataProvider, NotificationProvider, ProgressProvider)
-    window.location.href = '/login';
+    authApi.logout().catch(() => {}).finally(() => {
+      clearTokens();
+      localStorage.removeItem('user');
+      localStorage.removeItem('completedLessons');
+      // Полная перезагрузка — сбросит все React-контексты (DataProvider, NotificationProvider, ProgressProvider)
+      window.location.href = '/login';
+    });
   };
 
   const updateUser = (updatedUser: User) => {

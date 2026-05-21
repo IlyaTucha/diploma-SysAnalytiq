@@ -1,5 +1,4 @@
 from ninja_extra import NinjaExtraAPI
-from ninja_jwt.controller import NinjaJWTDefaultController
 from app.internal.users.presentation.handlers import router as users_router
 from app.internal.courses.presentation.handlers import router as courses_router
 from app.internal.submissions.presentation.handlers import router as submissions_router
@@ -9,7 +8,6 @@ from app.internal.progress.presentation.handlers import router as progress_route
 from app.internal.groups.presentation.handlers import router as groups_router
 
 api = NinjaExtraAPI()
-api.register_controllers(NinjaJWTDefaultController)
 
 api.add_router("/auth", users_router)
 api.add_router("", courses_router)

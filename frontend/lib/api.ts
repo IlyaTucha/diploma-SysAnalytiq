@@ -27,33 +27,24 @@ export function getAccessToken(): string | null {
   return localStorage.getItem('access_token');
 }
 
-export function getRefreshToken(): string | null {
-  return localStorage.getItem('refresh_token');
-}
-
-export function setTokens(access: string, refresh: string) {
+export function setAccessToken(access: string) {
   localStorage.setItem('access_token', access);
-  localStorage.setItem('refresh_token', refresh);
 }
 
 export function clearTokens() {
   localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
 }
 
 async function refreshAccessToken(): Promise<string | null> {
-  const refresh = getRefreshToken();
-  if (!refresh) return null;
-
   try {
-    const res = await fetch(`${API_BASE}/token/refresh`, {
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh }),
+      credentials: 'include',
     });
     if (!res.ok) return null;
     const data = await res.json();
-    localStorage.setItem('access_token', data.access);
+    setAccessToken(data.access);
     return data.access;
   } catch {
     return null;
@@ -78,13 +69,13 @@ async function apiFetch<T>(
     }
   }
 
-  let res = await fetch(url, { ...options, headers });
+  let res = await fetch(url, { ...options, headers, credentials: 'include' });
 
   if (res.status === 401 && !skipAuth) {
     const newToken = await refreshAccessToken();
     if (newToken) {
       headers['Authorization'] = `Bearer ${newToken}`;
-      res = await fetch(url, { ...options, headers });
+      res = await fetch(url, { ...options, headers, credentials: 'include' });
     } else {
       clearTokens();
       throw new Error('Session expired');
@@ -104,10 +95,13 @@ async function apiFetch<T>(
 
 export const authApi = {
   vkLogin: (data: { access_token: string }) =>
-    apiFetch<{ access: string; refresh: string; user: any }>('/auth/vk', {
+    apiFetch<{ access: string; user: any }>('/auth/vk', {
       method: 'POST',
       body: JSON.stringify(data),
     }, true),
+
+  logout: () =>
+    apiFetch<{ success: boolean }>('/auth/logout', { method: 'POST' }, true),
 
   getMe: () => apiFetch<any>('/auth/me'),
 

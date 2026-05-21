@@ -14,9 +14,6 @@ class UserSchema(Schema):
     is_admin: bool
     group_id: Optional[uuid.UUID] = None
     group_name: Optional[str] = None
-    # Заполняется только в ответах /telegram-bind и /telegram-notifications:
-    # True — бот смог написать пользователю первым; False — пользователь
-    # должен сам открыть бота и нажать Start; None — поле не применимо.
     telegram_can_receive: Optional[bool] = None
 
 class VKLoginSchema(Schema):
@@ -40,5 +37,7 @@ class TelegramBindSchema(Schema):
 
 class AuthResponse(Schema):
     access: str
-    refresh: str
     user: UserSchema
+
+class TokenResponse(Schema):
+    access: str
