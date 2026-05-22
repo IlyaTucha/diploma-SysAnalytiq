@@ -142,6 +142,8 @@ OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
 NINJA_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 # AI Check settings

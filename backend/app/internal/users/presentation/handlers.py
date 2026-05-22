@@ -60,7 +60,18 @@ def refresh_token(request, response: HttpResponse):
     except TokenError:
         response.delete_cookie(REFRESH_COOKIE_NAME, path=REFRESH_COOKIE_PATH)
         raise HttpError(401, "Invalid refresh token")
-    return {'access': str(refresh.access_token)}
+    access = str(refresh.access_token)
+    # Ротация: гасим использованный refresh-токен и выдаём новый с обновлённым
+    # сроком, чтобы активная сессия продлевалась (скользящее окно в 7 дней).
+    try:
+        refresh.blacklist()
+    except AttributeError:
+        pass
+    refresh.set_jti()
+    refresh.set_exp()
+    refresh.set_iat()
+    _set_refresh_cookie(response, str(refresh))
+    return {'access': access}
 
 
 @router.post("/logout", auth=None)
