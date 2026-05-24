@@ -52,7 +52,7 @@ class AiCheckService:
         if other_solutions:
             parts = []
             for i, sol in enumerate(other_solutions, 1):
-                truncated = sol[:2000] if len(sol) > 2000 else sol
+                truncated = sol[:4000] if len(sol) > 4000 else sol
                 parts.append(f"--- Решение {i} ---\n{truncated}")
             other_block = (
                 "\n\nДругие принятые решения этого задания (для сравнения на плагиат):\n"
@@ -60,7 +60,7 @@ class AiCheckService:
             )
 
         # Нумеруем строки решения студента (увеличенный лимит для больших XML/BPMN)
-        lines = student_solution[:20000].splitlines()
+        lines = student_solution[:50000].splitlines()
         numbered_solution = "\n".join(f"{i+1}: {line}" for i, line in enumerate(lines))
 
         return f"""Ты — преподаватель системной аналитики. Пишешь отзыв СТУДЕНТУ на его работу (обращайся на "ты" или безлично).
@@ -72,9 +72,9 @@ class AiCheckService:
 ## Задание
 {lesson_title}
 
-{task_description[:3000]}
+{task_description[:6000]}
 
-{f"Эталонное решение (ТОЛЬКО для твоего внутреннего сравнения, НЕ упоминай его студенту):{chr(10)}{correct_answer[:2000]}" if correct_answer else ""}
+{f"Эталонное решение (ТОЛЬКО для твоего внутреннего сравнения, НЕ упоминай его студенту):{chr(10)}{correct_answer[:12000]}" if correct_answer else ""}
 
 ## Решение студента (строки пронумерованы)
 {numbered_solution}
