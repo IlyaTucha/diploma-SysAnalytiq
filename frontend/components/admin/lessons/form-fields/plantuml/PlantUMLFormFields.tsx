@@ -143,91 +143,97 @@ export function PlantUMLFormFields({ correctAnswer, onChange, hasError }: PlantU
   const renderGlobalOptions = (cfg: PlantUMLValidationConfig, updateCfg: (updates: Partial<PlantUMLValidationConfig>) => void) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkParticipantCount" 
+        <Checkbox
+          id="checkParticipantCount"
           checked={cfg.checkParticipantCount}
           onCheckedChange={(c) => updateCfg({ checkParticipantCount: c as boolean })}
         />
+        <Users className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkParticipantCount" className="font-normal cursor-pointer">
           Количество участников
         </Label>
-        <OperatorSelector 
-          value={cfg.checkParticipantCountOperator} 
+        <OperatorSelector
+          value={cfg.checkParticipantCountOperator}
           onChange={(op) => updateCfg({ checkParticipantCountOperator: op })}
           disabled={!cfg.checkParticipantCount}
         />
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkRelationshipCount" 
+        <Checkbox
+          id="checkRelationshipCount"
           checked={cfg.checkRelationshipCount}
           onCheckedChange={(c) => updateCfg({ checkRelationshipCount: c as boolean })}
         />
+        <Share2 className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkRelationshipCount" className="font-normal cursor-pointer">
           Количество связей
         </Label>
-        <OperatorSelector 
-          value={cfg.checkRelationshipCountOperator} 
+        <OperatorSelector
+          value={cfg.checkRelationshipCountOperator}
           onChange={(op) => updateCfg({ checkRelationshipCountOperator: op })}
           disabled={!cfg.checkRelationshipCount}
         />
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkLoopCount" 
+        <Checkbox
+          id="checkLoopCount"
           checked={cfg.checkLoopCount}
           onCheckedChange={(c) => updateCfg({ checkLoopCount: c as boolean })}
         />
+        <Repeat className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkLoopCount" className="font-normal cursor-pointer">
           Количество циклов
         </Label>
-        <OperatorSelector 
-          value={cfg.checkLoopCountOperator} 
+        <OperatorSelector
+          value={cfg.checkLoopCountOperator}
           onChange={(op) => updateCfg({ checkLoopCountOperator: op })}
           disabled={!cfg.checkLoopCount}
         />
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkAltCount" 
+        <Checkbox
+          id="checkAltCount"
           checked={cfg.checkAltCount}
           onCheckedChange={(c) => updateCfg({ checkAltCount: c as boolean })}
         />
+        <GitFork className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkAltCount" className="font-normal cursor-pointer">
           Количество альтернатив
         </Label>
-        <OperatorSelector 
-          value={cfg.checkAltCountOperator} 
+        <OperatorSelector
+          value={cfg.checkAltCountOperator}
           onChange={(op) => updateCfg({ checkAltCountOperator: op })}
           disabled={!cfg.checkAltCount}
         />
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkClassCount" 
+        <Checkbox
+          id="checkClassCount"
           checked={cfg.checkClassCount}
           onCheckedChange={(c) => updateCfg({ checkClassCount: c as boolean })}
         />
+        <Box className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkClassCount" className="font-normal cursor-pointer">
           Количество классов
         </Label>
-        <OperatorSelector 
-          value={cfg.checkClassCountOperator} 
+        <OperatorSelector
+          value={cfg.checkClassCountOperator}
           onChange={(op) => updateCfg({ checkClassCountOperator: op })}
           disabled={!cfg.checkClassCount}
         />
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkInterfaceCount" 
+        <Checkbox
+          id="checkInterfaceCount"
           checked={cfg.checkInterfaceCount}
           onCheckedChange={(c) => updateCfg({ checkInterfaceCount: c as boolean })}
         />
+        <Component className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkInterfaceCount" className="font-normal cursor-pointer">
           Количество интерфейсов
         </Label>
-        <OperatorSelector 
-          value={cfg.checkInterfaceCountOperator} 
+        <OperatorSelector
+          value={cfg.checkInterfaceCountOperator}
           onChange={(op) => updateCfg({ checkInterfaceCountOperator: op })}
           disabled={!cfg.checkInterfaceCount}
         />

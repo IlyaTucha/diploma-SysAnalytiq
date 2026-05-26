@@ -27,6 +27,7 @@ import {
   Boxes,
   Hash,
   Spline,
+  Tag,
 } from 'lucide-react';
 
 interface BpmnFormFieldsProps {
@@ -208,69 +209,74 @@ export function BpmnFormFields({ correctAnswer, onChange, hasError }: BpmnFormFi
   const renderGlobalOptions = (cfg: BpmnValidationConfig, updateCfg: (updates: Partial<BpmnValidationConfig>) => void) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkNodeCount" 
+        <Checkbox
+          id="checkNodeCount"
           checked={cfg.checkNodeCount}
           onCheckedChange={(c) => updateCfg({ checkNodeCount: c as boolean })}
         />
+        <Hash className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkNodeCount" className="font-normal cursor-pointer">
           Количество элементов
         </Label>
-        <OperatorSelector 
-          value={cfg.checkNodeCountOperator} 
+        <OperatorSelector
+          value={cfg.checkNodeCountOperator}
           onChange={(op: string) => updateCfg({ checkNodeCountOperator: op })}
           disabled={!cfg.checkNodeCount}
         />
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkNodeNames" 
+        <Checkbox
+          id="checkNodeNames"
           checked={cfg.checkNodeNames}
           onCheckedChange={(c) => updateCfg({ checkNodeNames: c as boolean })}
         />
+        <Tag className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkNodeNames" className="font-normal cursor-pointer">Названия элементов</Label>
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkEdgeCount" 
+        <Checkbox
+          id="checkEdgeCount"
           checked={cfg.checkEdgeCount}
           onCheckedChange={(c) => updateCfg({ checkEdgeCount: c as boolean })}
         />
+        <Spline className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkEdgeCount" className="font-normal cursor-pointer">
           Количество связей
         </Label>
-        <OperatorSelector 
-          value={cfg.checkEdgeCountOperator} 
+        <OperatorSelector
+          value={cfg.checkEdgeCountOperator}
           onChange={(op: string) => updateCfg({ checkEdgeCountOperator: op })}
           disabled={!cfg.checkEdgeCount}
         />
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkLaneCount" 
+        <Checkbox
+          id="checkLaneCount"
           checked={cfg.checkLaneCount}
           onCheckedChange={(c) => updateCfg({ checkLaneCount: c as boolean })}
         />
+        <Rows3 className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkLaneCount" className="font-normal cursor-pointer">
           Количество дорожек
         </Label>
-        <OperatorSelector 
-          value={cfg.checkLaneCountOperator} 
+        <OperatorSelector
+          value={cfg.checkLaneCountOperator}
           onChange={(op: string) => updateCfg({ checkLaneCountOperator: op })}
           disabled={!cfg.checkLaneCount}
         />
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkGatewayCount" 
+        <Checkbox
+          id="checkGatewayCount"
           checked={cfg.checkGatewayCount}
           onCheckedChange={(c) => updateCfg({ checkGatewayCount: c as boolean })}
         />
+        <Diamond className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkGatewayCount" className="font-normal cursor-pointer">
           Количество шлюзов
         </Label>
-        <OperatorSelector 
-          value={cfg.checkGatewayCountOperator} 
+        <OperatorSelector
+          value={cfg.checkGatewayCountOperator}
           onChange={(op: string) => updateCfg({ checkGatewayCountOperator: op })}
           disabled={!cfg.checkGatewayCount}
         />

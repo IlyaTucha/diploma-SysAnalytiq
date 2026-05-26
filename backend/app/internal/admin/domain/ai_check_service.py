@@ -15,12 +15,9 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 class AiCheckService:
     @staticmethod
     def _strip_bpmn_layout(text: str) -> str:
-        # Секция bpmndi описывает координаты фигур и не нужна для семантической проверки
-        text = re.sub(r'<bpmndi:[^>]*?/>', '', text)
-        text = re.sub(r'<bpmndi:.*?</bpmndi:[^>]+>', '', text, flags=re.DOTALL)
-        # XML-комментарии
-        text = re.sub(r'<!--.*?-->', '', text, flags=re.DOTALL)
-        # Схлопнуть пустые строки
+        # Секция BPMNDiagram описывает координаты фигур и не нужна для семантической проверки
+        text = re.sub(r'<bpmndi:BPMNDiagram\b[\s\S]*?</bpmndi:BPMNDiagram>', '', text)
+        text = re.sub(r'<!--[\s\S]*?-->', '', text)
         text = re.sub(r'\n[ \t]*\n+', '\n', text)
         return text.strip()
 
@@ -33,11 +30,8 @@ class AiCheckService:
         student_solution = submission.student_solution or ''
         lesson_title = submission.lesson.title or ''
 
-        is_bpmn = submission.lesson.module.slug == 'bpmn'
-        if is_bpmn:
+        if submission.lesson.module.slug == 'bpmn':
             student_solution = AiCheckService._strip_bpmn_layout(student_solution)
-            if correct_answer:
-                correct_answer = AiCheckService._strip_bpmn_layout(correct_answer)
 
         other_solutions = list(
             Submission.objects.filter(lesson=submission.lesson, status='approved')
@@ -45,8 +39,6 @@ class AiCheckService:
             .exclude(student=submission.student)
             .values_list('student_solution', flat=True)[:10]
         )
-        if is_bpmn:
-            other_solutions = [AiCheckService._strip_bpmn_layout(s) for s in other_solutions]
 
         prompt = AiCheckService._build_prompt(
             lesson_title, task_description, correct_answer,

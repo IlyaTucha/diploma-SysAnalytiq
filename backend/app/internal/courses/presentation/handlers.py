@@ -604,7 +604,18 @@ def _validate_plantuml_solution(student_code: str, config: dict) -> dict:
                     return {"valid": False, "error": f"Ожидалось {label}: {expected}{suffix}, найдено: {actual}"}
             elif c_type in ('element_exists', 'contains_text'):
                 target = check.get('target', '')
-                if target not in student_code:
+                PLANTUML_KEYWORDS = {
+                    'actor', 'participant', 'database', 'entity', 'boundary', 'control',
+                    'queue', 'collections', 'usecase', 'class', 'interface', 'enum',
+                    'abstract', 'package', 'component', 'node', 'folder', 'frame',
+                    'cloud', 'file', 'rectangle', 'agent', 'artifact', 'storage', 'state',
+                }
+                if target.lower() in PLANTUML_KEYWORDS:
+                    pattern = r'\b' + re.escape(target) + r'\b'
+                    found = re.search(pattern, student_code, re.IGNORECASE) is not None
+                else:
+                    found = target.lower() in student_code.lower()
+                if not found:
                     return {"valid": False, "error": f'Код должен содержать: "{target}"'}
     elif config.get('code'):
         ref_match = re.search(r'@startuml[\s\S]*?@enduml', config['code'])

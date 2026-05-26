@@ -160,70 +160,76 @@ export function ErdFormFields({ correctAnswer, onChange, hasError }: ErdFormFiel
   const renderGlobalOptions = (cfg: ErdValidationConfig, updateCfg: (updates: Partial<ErdValidationConfig>) => void) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkTableCount" 
+        <Checkbox
+          id="checkTableCount"
           checked={cfg.checkTableCount}
           onCheckedChange={(c) => updateCfg({ checkTableCount: c as boolean })}
         />
+        <Hash className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkTableCount" className="font-normal cursor-pointer">
           Количество таблиц
         </Label>
-        <OperatorSelector 
-          value={cfg.checkTableCountOperator} 
+        <OperatorSelector
+          value={cfg.checkTableCountOperator}
           onChange={(op) => updateCfg({ checkTableCountOperator: op })}
           disabled={!cfg.checkTableCount}
         />
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkTableNames" 
+        <Checkbox
+          id="checkTableNames"
           checked={cfg.checkTableNames}
           onCheckedChange={(c) => updateCfg({ checkTableNames: c as boolean })}
         />
+        <Table className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkTableNames" className="font-normal cursor-pointer">Названия таблиц</Label>
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkColumnCount" 
+        <Checkbox
+          id="checkColumnCount"
           checked={cfg.checkColumnCount}
           onCheckedChange={(c) => updateCfg({ checkColumnCount: c as boolean })}
         />
+        <Hash className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkColumnCount" className="font-normal cursor-pointer">
           Количество атрибутов
         </Label>
-        <OperatorSelector 
-          value={cfg.checkColumnCountOperator} 
+        <OperatorSelector
+          value={cfg.checkColumnCountOperator}
           onChange={(op) => updateCfg({ checkColumnCountOperator: op })}
           disabled={!cfg.checkColumnCount}
         />
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkColumnNames" 
+        <Checkbox
+          id="checkColumnNames"
           checked={cfg.checkColumnNames}
           onCheckedChange={(c) => updateCfg({ checkColumnNames: c as boolean })}
         />
+        <Columns3 className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkColumnNames" className="font-normal cursor-pointer">Названия атрибутов</Label>
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkColumnTypes" 
+        <Checkbox
+          id="checkColumnTypes"
           checked={cfg.checkColumnTypes}
           onCheckedChange={(c) => updateCfg({ checkColumnTypes: c as boolean })}
         />
+        <Type className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkColumnTypes" className="font-normal cursor-pointer">Типы атрибутов</Label>
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkRelationshipCount" 
+        <Checkbox
+          id="checkRelationshipCount"
           checked={cfg.checkRelationshipCount}
           onCheckedChange={(c) => updateCfg({ checkRelationshipCount: c as boolean })}
         />
+        <Share2 className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkRelationshipCount" className="font-normal cursor-pointer">
           Количество связей
         </Label>
-        <OperatorSelector 
-          value={cfg.checkRelationshipCountOperator} 
+        <OperatorSelector
+          value={cfg.checkRelationshipCountOperator}
           onChange={(op) => updateCfg({ checkRelationshipCountOperator: op })}
           disabled={!cfg.checkRelationshipCount}
         />

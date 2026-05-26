@@ -129,70 +129,75 @@ export function SwaggerFormFields({ correctAnswer, onChange, hasError }: Swagger
   const renderGlobalOptions = (cfg: SwaggerValidationConfig, updateCfg: (updates: Partial<SwaggerValidationConfig>) => void) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkPathCount" 
+        <Checkbox
+          id="checkPathCount"
           checked={cfg.checkPathCount}
           onCheckedChange={(c) => updateCfg({ checkPathCount: c as boolean })}
         />
+        <Route className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkPathCount" className="font-normal cursor-pointer">
           Количество путей
         </Label>
-        <OperatorSelector 
-          value={cfg.checkPathCountOperator} 
+        <OperatorSelector
+          value={cfg.checkPathCountOperator}
           onChange={(op) => updateCfg({ checkPathCountOperator: op })}
           disabled={!cfg.checkPathCount}
         />
       </div>
 
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkSchemaCount" 
+        <Checkbox
+          id="checkSchemaCount"
           checked={cfg.checkSchemaCount}
           onCheckedChange={(c) => updateCfg({ checkSchemaCount: c as boolean })}
         />
+        <FileCode className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkSchemaCount" className="font-normal cursor-pointer">
           Количество схем
         </Label>
-        <OperatorSelector 
-          value={cfg.checkSchemaCountOperator} 
+        <OperatorSelector
+          value={cfg.checkSchemaCountOperator}
           onChange={(op) => updateCfg({ checkSchemaCountOperator: op })}
           disabled={!cfg.checkSchemaCount}
         />
       </div>
 
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkEndpointCount" 
+        <Checkbox
+          id="checkEndpointCount"
           checked={cfg.checkEndpointCount}
           onCheckedChange={(c) => updateCfg({ checkEndpointCount: c as boolean })}
         />
+        <Zap className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkEndpointCount" className="font-normal cursor-pointer">
           Количество эндпоинтов
         </Label>
-        <OperatorSelector 
-          value={cfg.checkEndpointCountOperator} 
+        <OperatorSelector
+          value={cfg.checkEndpointCountOperator}
           onChange={(op) => updateCfg({ checkEndpointCountOperator: op })}
           disabled={!cfg.checkEndpointCount}
         />
       </div>
 
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkPathNames" 
+        <Checkbox
+          id="checkPathNames"
           checked={cfg.checkPathNames}
           onCheckedChange={(c) => updateCfg({ checkPathNames: c as boolean })}
         />
+        <Search className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkPathNames" className="font-normal cursor-pointer">
           Совпадение путей
         </Label>
       </div>
 
       <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="checkOperationNames" 
+        <Checkbox
+          id="checkOperationNames"
           checked={cfg.checkOperationNames}
           onCheckedChange={(c) => updateCfg({ checkOperationNames: c as boolean })}
         />
+        <Send className="h-4 w-4 text-muted-foreground" />
         <Label htmlFor="checkOperationNames" className="font-normal cursor-pointer">
           Совпадение операций
         </Label>
