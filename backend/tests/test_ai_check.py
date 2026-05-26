@@ -38,6 +38,7 @@ class TestAiCheckService:
         mock_settings.OPENROUTER_TEMPERATURE = 0.3
 
         mock_response = MagicMock()
+        mock_response.status_code = 200
         mock_response.json.return_value = {
             "choices": [{
                 "message": {
@@ -45,7 +46,6 @@ class TestAiCheckService:
                 }
             }]
         }
-        mock_response.raise_for_status = MagicMock()
         mock_post.return_value = mock_response
 
         result = AiCheckService.check_submission(setup_submission.id)
@@ -64,6 +64,7 @@ class TestAiCheckService:
         mock_settings.OPENROUTER_TEMPERATURE = 0.3
 
         mock_response = MagicMock()
+        mock_response.status_code = 200
         mock_response.json.return_value = {
             "choices": [{
                 "message": {
@@ -77,7 +78,6 @@ class TestAiCheckService:
                 }
             }]
         }
-        mock_response.raise_for_status = MagicMock()
         mock_post.return_value = mock_response
 
         result = AiCheckService.check_submission(setup_submission.id)
@@ -124,6 +124,7 @@ class TestAiCheckService:
         mock_settings.OPENROUTER_TEMPERATURE = 0.3
 
         mock_response = MagicMock()
+        mock_response.status_code = 200
         mock_response.json.return_value = {
             "choices": [{
                 "message": {
@@ -131,7 +132,6 @@ class TestAiCheckService:
                 }
             }]
         }
-        mock_response.raise_for_status = MagicMock()
         mock_post.return_value = mock_response
 
         result = AiCheckService.check_submission(setup_submission.id)

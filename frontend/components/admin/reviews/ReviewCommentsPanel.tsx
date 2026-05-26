@@ -199,10 +199,6 @@ function InlineCommentCard({ comment, onSave, onRemove }: {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(comment.text);
 
-  useEffect(() => {
-    if (!editing) setDraft(comment.text);
-  }, [comment.text, editing]);
-
   const commit = () => {
     const trimmed = draft.trim();
     if (!trimmed) return;
