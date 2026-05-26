@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import { OperatorSelector } from '@/components/ui/operator-selector';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Route, FileCode, Send, Search, Zap } from 'lucide-react';
 
 interface SwaggerFormFieldsProps {
   correctAnswer: string;
@@ -73,14 +74,15 @@ export function SwaggerFormFields({ correctAnswer, onChange, hasError }: Swagger
   };
 
   const checkTypes = [
-    { value: 'path_count', label: 'Количество путей (paths)' },
-    { value: 'schema_count', label: 'Количество схем (components)' },
-    { value: 'endpoint_count', label: 'Количество эндпоинтов (GET, POST...)' },
-    { value: 'path_exists', label: 'Наличие пути' },
-    { value: 'operation_exists', label: 'Наличие операции (Метод Путь)' },
+    { value: 'path_count', label: 'Количество путей (paths)', icon: Route },
+    { value: 'schema_count', label: 'Количество схем (components)', icon: FileCode },
+    { value: 'endpoint_count', label: 'Количество эндпоинтов (GET, POST...)', icon: Zap },
+    { value: 'path_exists', label: 'Наличие пути', icon: Search },
+    { value: 'operation_exists', label: 'Наличие операции (Метод Путь)', icon: Send },
   ];
 
   const renderCheckFields = (check: SwaggerCheck, updateCheck: (updates: Partial<SwaggerCheck>) => void) => {
+    if (!check.type) return null;
     const isCountCheck = ['path_count', 'schema_count', 'endpoint_count'].includes(check.type);
 
     if (isCountCheck) {
@@ -205,7 +207,7 @@ export function SwaggerFormFields({ correctAnswer, onChange, hasError }: Swagger
       checkTypes={checkTypes}
       renderCheckFields={renderCheckFields}
       renderGlobalOptions={renderGlobalOptions}
-      defaultCheck={{ id: '', type: 'path_count', operator: '=' }}
+      defaultCheck={{ id: '', type: '', operator: '=' }}
       hasError={hasError}
       codePlaceholder={`openapi: 3.0.0
 info:

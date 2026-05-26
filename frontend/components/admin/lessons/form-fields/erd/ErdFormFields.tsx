@@ -4,6 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import { OperatorSelector } from '@/components/ui/operator-selector';
+import { Table, Columns3, Type, Hash, Share2 } from 'lucide-react';
 
 interface ErdFormFieldsProps {
   correctAnswer: string;
@@ -11,7 +12,7 @@ interface ErdFormFieldsProps {
   hasError?: boolean;
 }
 
-type CheckType = 'table_count' | 'relationship_count' | 'table_exists' | 'column_exists' | 'column_type';
+type CheckType = '' | 'table_count' | 'relationship_count' | 'table_exists' | 'column_exists' | 'column_type';
 
 interface ErdCheck extends BaseCheck {
   type: CheckType;
@@ -78,14 +79,15 @@ export function ErdFormFields({ correctAnswer, onChange, hasError }: ErdFormFiel
   };
 
   const checkTypes = [
-    { value: 'table_exists', label: 'Наличие таблицы' },
-    { value: 'column_exists', label: 'Наличие атрибута' },
-    { value: 'column_type', label: 'Тип атрибута' },
-    { value: 'table_count', label: 'Количество таблиц' },
-    { value: 'relationship_count', label: 'Количество связей' },
+    { value: 'table_exists', label: 'Наличие таблицы', icon: Table },
+    { value: 'column_exists', label: 'Наличие атрибута', icon: Columns3 },
+    { value: 'column_type', label: 'Тип атрибута', icon: Type },
+    { value: 'table_count', label: 'Количество таблиц', icon: Hash },
+    { value: 'relationship_count', label: 'Количество связей', icon: Share2 },
   ];
 
   const renderCheckFields = (check: ErdCheck, updateCheck: (updates: Partial<ErdCheck>) => void) => {
+    if (!check.type) return null;
     const isCountCheck = ['table_count', 'relationship_count'].includes(check.type);
     
     if (isCountCheck) {
@@ -238,7 +240,7 @@ export function ErdFormFields({ correctAnswer, onChange, hasError }: ErdFormFiel
       renderGlobalOptions={renderGlobalOptions}
       defaultCheck={{
         id: '',
-        type: 'table_exists',
+        type: '',
         target: '',
         value: '',
         operator: '='

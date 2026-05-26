@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, Code, ListChecks } from 'lucide-react';
+import { Plus, Trash2, Code, ListChecks, type LucideIcon } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useEffect, useRef } from 'react';
 
@@ -22,7 +22,7 @@ export interface BaseValidationConfig {
 interface ValidationFormFieldsProps<TCheck extends BaseCheck, TConfig extends BaseValidationConfig> {
   config: TConfig;
   onConfigChange: (config: TConfig) => void;
-  checkTypes: { value: string; label: string }[];
+  checkTypes: { value: string; label: string; icon?: LucideIcon }[];
   renderCheckFields: (check: TCheck, updateCheck: (updates: Partial<TCheck>) => void) => React.ReactNode;
   renderGlobalOptions?: (config: TConfig, updateConfig: (updates: Partial<TConfig>) => void) => React.ReactNode;
   defaultCheck: TCheck;
@@ -162,20 +162,28 @@ export function ValidationFormFields<TCheck extends BaseCheck, TConfig extends B
                       <div className="flex-1 grid gap-4">
                         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto] gap-4 items-start">
                           <div className="space-y-2">
-                            <Label>Тип проверки</Label>
-                            <Select 
-                              value={check.type} 
+                            <Label className={hasError && !check.type ? "text-destructive" : ""}>
+                              Тип проверки <span className="text-destructive">*</span>
+                            </Label>
+                            <Select
+                              value={check.type}
                               onValueChange={(v) => updateCheck(check.id, { type: v } as Partial<TCheck>)}
                             >
-                              <SelectTrigger>
-                                <SelectValue />
+                              <SelectTrigger className={hasError && !check.type ? "border-destructive" : ""}>
+                                <SelectValue placeholder="Выберите тип проверки" />
                               </SelectTrigger>
                               <SelectContent>
-                                {checkTypes.map(t => (
-                                  <SelectItem key={t.value} value={t.value}>
-                                    {t.label}
-                                  </SelectItem>
-                                ))}
+                                {checkTypes.map(t => {
+                                  const Icon = t.icon;
+                                  return (
+                                    <SelectItem key={t.value} value={t.value}>
+                                      <span className="flex items-center gap-2">
+                                        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+                                        <span>{t.label}</span>
+                                      </span>
+                                    </SelectItem>
+                                  );
+                                })}
                               </SelectContent>
                             </Select>
                           </div>

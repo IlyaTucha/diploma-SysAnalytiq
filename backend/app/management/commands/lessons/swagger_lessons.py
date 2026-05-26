@@ -303,7 +303,7 @@ paths:
 4. **1 securityScheme**: `bearerAuth` (JWT)
 """,
         "initial_code": 'openapi: "3.0.0"\ninfo:\n  title: Auth API\n  version: "1.0"\npaths: {}\ncomponents:\n  securitySchemes:\n    bearerAuth:\n      type: http\n      scheme: bearer\n',
-        "correct_answer": '{"mode":"manual","checks":[{"id":"swag4-1","type":"path_count","value":"3","operator":">="},{"id":"swag4-2","type":"endpoint_count","value":"4","operator":">="},{"id":"swag4-3","type":"schema_count","value":"2","operator":">="},{"id":"swag4-4","type":"has_security_scheme","value":"true"},{"id":"swag4-5","type":"path_exists","target":"/auth/login"}]}',
+        "correct_answer": '{"mode":"manual","checks":[{"id":"swag4-1","type":"path_count","value":"3","operator":">="},{"id":"swag4-2","type":"endpoint_count","value":"4","operator":">="},{"id":"swag4-3","type":"schema_count","value":"2","operator":">="},{"id":"swag4-4","type":"path_exists","target":"/auth/login"}]}',
         "hint": "Создайте /auth/login с POST (без security). /users с GET, /users/{id} с GET и DELETE. Добавьте security: - bearerAuth: [] к защищённым эндпоинтам.",
     },
     {
@@ -415,7 +415,7 @@ Callbacks описывают асинхронные ответы:
 4. **3 схемы**: `Payment`, `PaymentCreate`, `WebhookPayload`
 """,
         "initial_code": 'openapi: "3.0.0"\ninfo:\n  title: Payments API\n  version: "1.0"\npaths: {}\nwebhooks: {}\n',
-        "correct_answer": '{"mode":"manual","checks":[{"id":"swag6-1","type":"path_count","value":"2","operator":">="},{"id":"swag6-2","type":"endpoint_count","value":"3","operator":">="},{"id":"swag6-3","type":"schema_count","value":"2","operator":">="},{"id":"swag6-4","type":"has_webhooks","value":"true"}]}',
+        "correct_answer": '{"mode":"manual","checks":[{"id":"swag6-1","type":"path_count","value":"2","operator":">="},{"id":"swag6-2","type":"endpoint_count","value":"3","operator":">="},{"id":"swag6-3","type":"schema_count","value":"2","operator":">="}]}',
         "hint": "В paths создайте /payments (POST) и /payments/{id} (GET, POST для refund). В webhooks добавьте paymentSuccess и paymentFailed с post методами.",
     },
     {

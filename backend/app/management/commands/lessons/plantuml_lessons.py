@@ -262,7 +262,7 @@ seller --> UC3
 - Преподаватель: Создать курс, Проверить работы
 """,
         "initial_code": "@startuml\nleft to right direction\n\nactor Студент as student\n\n@enduml",
-        "correct_answer": '{"mode":"manual","checks":[{"id":"puml3-1","type":"participant_count","value":"2","operator":">="},{"id":"puml3-2","type":"usecase_count","value":"4","operator":">="},{"id":"puml3-3","type":"relationship_count","value":"4","operator":">="}]}',
+        "correct_answer": '{"mode":"manual","checks":[{"id":"puml3-1","type":"participant_count","value":"2","operator":">="},{"id":"puml3-2","type":"relationship_count","value":"4","operator":">="}]}',
         "hint": "Добавьте actor Преподаватель. Создайте rectangle с 4+ usecase. Соедините акторов с use case стрелками -->.",
     },
     {
@@ -312,7 +312,7 @@ stop
    - Нет: Создать аккаунт → Отправить письмо подтверждения → конец
 """,
         "initial_code": "@startuml\nstart\n:Ввести email и пароль;\n\n@enduml",
-        "correct_answer": '{"mode":"manual","checks":[{"id":"puml4-1","type":"has_start","value":"true"},{"id":"puml4-2","type":"has_stop","value":"true"},{"id":"puml4-3","type":"has_if","value":"true"},{"id":"puml4-4","type":"activity_count","value":"3","operator":">="}]}',
+        "correct_answer": '{"mode":"manual","checks":[{"id":"puml4-1","type":"element_exists","target":"start"},{"id":"puml4-2","type":"element_exists","target":"stop"},{"id":"puml4-3","type":"element_exists","target":"if ("},{"id":"puml4-4","type":"element_exists","target":"endif"}]}',
         "hint": "После ввода используйте if (email существует?) then (да) :Показать ошибку; stop; else (нет) :Создать аккаунт; :Отправить письмо; stop; endif",
     },
     {
@@ -425,7 +425,7 @@ api --> db
 - Database: PostgreSQL
 """,
         "initial_code": "@startuml\npackage \"Frontend\" {\n    [Web App] as web\n}\n\n@enduml",
-        "correct_answer": '{"mode":"manual","checks":[{"id":"puml6-1","type":"package_count","value":"2","operator":">="},{"id":"puml6-2","type":"component_count","value":"4","operator":">="},{"id":"puml6-3","type":"database_count","value":"1","operator":">="},{"id":"puml6-4","type":"relationship_count","value":"4","operator":">="}]}',
+        "correct_answer": '{"mode":"manual","checks":[{"id":"puml6-1","type":"element_exists","target":"package "},{"id":"puml6-2","type":"element_exists","target":"database "},{"id":"puml6-3","type":"relationship_count","value":"4","operator":">="}]}',
         "hint": "Добавьте package Backend с компонентами API Gateway, User Service. Добавьте database PostgreSQL. Соедините: web-->api, api-->user_service, api-->db.",
     },
     {

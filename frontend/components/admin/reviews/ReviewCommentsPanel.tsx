@@ -1,6 +1,6 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, XCircle, Trash2, CheckCircle, Bot } from "lucide-react";
+import { MessageSquare, XCircle, Trash2, CheckCircle, Bot, Pencil, Check, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -153,25 +153,12 @@ export function ReviewCommentsPanel({
                 <h3 className="mb-2 text-sm font-medium">Комментарии к коду ({inlineComments.length})</h3>
                 <div className="space-y-3">
                   {inlineComments.map((comment) => (
-                    <Card key={comment.id} data-comment-id={comment.id} className="p-3 text-sm relative group hover:border-primary/50 transition-colors">
-                        <div className="flex justify-between items-start gap-2 mb-1">
-                            <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
-                                {comment.lineStart === comment.lineEnd ? `Строка ${comment.lineStart}` : `Строки ${comment.lineStart}-${comment.lineEnd}`}
-                            </span>
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
-                                onClick={() => handleRemoveInlineComment(comment.id)}
-                            >
-                                <Trash2 className="w-3 h-3" />
-                            </Button>
-                        </div>
-                        <div className="text-xs text-muted-foreground mb-2 line-clamp-2 border-l-2 pl-2 italic">
-                            {comment.highlightedText}
-                        </div>
-                        <p className="whitespace-pre-wrap">{comment.text}</p>
-                    </Card>
+                    <InlineCommentCard
+                      key={comment.id}
+                      comment={comment}
+                      onSave={(newText) => setInlineComments(prev => prev.map(c => c.id === comment.id ? { ...c, text: newText } : c))}
+                      onRemove={() => handleRemoveInlineComment(comment.id)}
+                    />
                   ))}
                 </div>
             </div>
@@ -201,6 +188,99 @@ export function ReviewCommentsPanel({
           </Button>
         </div>
     </div>
+  );
+}
+
+function InlineCommentCard({ comment, onSave, onRemove }: {
+  comment: Comment;
+  onSave: (text: string) => void;
+  onRemove: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(comment.text);
+
+  useEffect(() => {
+    if (!editing) setDraft(comment.text);
+  }, [comment.text, editing]);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    onSave(trimmed);
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setDraft(comment.text);
+    setEditing(false);
+  };
+
+  return (
+    <Card data-comment-id={comment.id} className="p-3 text-sm relative group hover:border-primary/50 transition-colors">
+      <div className="flex justify-between items-start gap-2 mb-1">
+        <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+          {comment.lineStart === comment.lineEnd ? `Строка ${comment.lineStart}` : `Строки ${comment.lineStart}-${comment.lineEnd}`}
+        </span>
+        <div className={`flex items-center gap-1 transition-all ${editing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+          {!editing && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 w-5 p-0 text-muted-foreground hover:text-primary"
+              onClick={() => setEditing(true)}
+              title="Редактировать"
+            >
+              <Pencil className="w-3 h-3" />
+            </Button>
+          )}
+          {!editing && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 w-5 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={onRemove}
+              title="Удалить"
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+      </div>
+      <div className="text-xs text-muted-foreground mb-2 line-clamp-2 border-l-2 pl-2 italic">
+        {comment.highlightedText}
+      </div>
+      {editing ? (
+        <div className="space-y-2">
+          <Textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="text-sm min-h-[80px]"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                commit();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancel();
+              }
+            }}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={cancel}>
+              <X className="w-3 h-3 mr-1" />
+              Отмена
+            </Button>
+            <Button size="sm" onClick={commit} disabled={!draft.trim()}>
+              <Check className="w-3 h-3 mr-1" />
+              Сохранить
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <p className="whitespace-pre-wrap">{comment.text}</p>
+      )}
+    </Card>
   );
 }
 

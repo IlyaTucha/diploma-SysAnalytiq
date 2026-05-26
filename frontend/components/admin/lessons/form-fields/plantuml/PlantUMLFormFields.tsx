@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useState } from 'react';
 import { OperatorSelector } from '@/components/ui/operator-selector';
+import { Box, Component, Users, Share2, Repeat, GitFork, Search } from 'lucide-react';
 
 interface PlantUMLFormFieldsProps {
   correctAnswer: string;
@@ -85,16 +86,17 @@ export function PlantUMLFormFields({ correctAnswer, onChange, hasError }: PlantU
   };
 
   const checkTypes = [
-    { value: 'class_count', label: 'Количество классов' },
-    { value: 'interface_count', label: 'Количество интерфейсов' },
-    { value: 'participant_count', label: 'Количество участников' },
-    { value: 'relationship_count', label: 'Количество связей' },
-    { value: 'loop_count', label: 'Количество циклов' },
-    { value: 'alt_count', label: 'Количество альтернатив' },
-    { value: 'element_exists', label: 'Наличие участника/элемента' },
+    { value: 'class_count', label: 'Количество классов', icon: Box },
+    { value: 'interface_count', label: 'Количество интерфейсов', icon: Component },
+    { value: 'participant_count', label: 'Количество участников', icon: Users },
+    { value: 'relationship_count', label: 'Количество связей', icon: Share2 },
+    { value: 'loop_count', label: 'Количество циклов', icon: Repeat },
+    { value: 'alt_count', label: 'Количество альтернатив', icon: GitFork },
+    { value: 'element_exists', label: 'Наличие участника/элемента', icon: Search },
   ];
 
   const renderCheckFields = (check: PlantUMLCheck, updateCheck: (updates: Partial<PlantUMLCheck>) => void) => {
+    if (!check.type) return null;
     const isCountCheck = check.type !== 'element_exists';
 
     if (isCountCheck) {
@@ -242,7 +244,7 @@ export function PlantUMLFormFields({ correctAnswer, onChange, hasError }: PlantU
       renderGlobalOptions={renderGlobalOptions}
       defaultCheck={{
         id: '',
-        type: 'class_count',
+        type: '',
         value: '',
         operator: '='
       }}

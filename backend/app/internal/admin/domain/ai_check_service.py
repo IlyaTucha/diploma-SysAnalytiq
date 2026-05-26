@@ -14,6 +14,17 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 class AiCheckService:
     @staticmethod
+    def _strip_bpmn_layout(text: str) -> str:
+        # Секция bpmndi описывает координаты фигур и не нужна для семантической проверки
+        text = re.sub(r'<bpmndi:[^>]*?/>', '', text)
+        text = re.sub(r'<bpmndi:.*?</bpmndi:[^>]+>', '', text, flags=re.DOTALL)
+        # XML-комментарии
+        text = re.sub(r'<!--.*?-->', '', text, flags=re.DOTALL)
+        # Схлопнуть пустые строки
+        text = re.sub(r'\n[ \t]*\n+', '\n', text)
+        return text.strip()
+
+    @staticmethod
     def check_submission(submission_id: int) -> dict:
         submission = Submission.objects.select_related('lesson', 'lesson__module', 'student').get(id=submission_id)
 
@@ -22,12 +33,20 @@ class AiCheckService:
         student_solution = submission.student_solution or ''
         lesson_title = submission.lesson.title or ''
 
+        is_bpmn = submission.lesson.module.slug == 'bpmn'
+        if is_bpmn:
+            student_solution = AiCheckService._strip_bpmn_layout(student_solution)
+            if correct_answer:
+                correct_answer = AiCheckService._strip_bpmn_layout(correct_answer)
+
         other_solutions = list(
             Submission.objects.filter(lesson=submission.lesson, status='approved')
             .exclude(id=submission_id)
             .exclude(student=submission.student)
             .values_list('student_solution', flat=True)[:10]
         )
+        if is_bpmn:
+            other_solutions = [AiCheckService._strip_bpmn_layout(s) for s in other_solutions]
 
         prompt = AiCheckService._build_prompt(
             lesson_title, task_description, correct_answer,
@@ -52,15 +71,14 @@ class AiCheckService:
         if other_solutions:
             parts = []
             for i, sol in enumerate(other_solutions, 1):
-                truncated = sol[:4000] if len(sol) > 4000 else sol
+                truncated = sol[:6000] if len(sol) > 6000 else sol
                 parts.append(f"--- Решение {i} ---\n{truncated}")
             other_block = (
                 "\n\nДругие принятые решения этого задания (для сравнения на плагиат):\n"
                 + "\n".join(parts)
             )
 
-        # Нумеруем строки решения студента (увеличенный лимит для больших XML/BPMN)
-        lines = student_solution[:50000].splitlines()
+        lines = student_solution[:100000].splitlines()
         numbered_solution = "\n".join(f"{i+1}: {line}" for i, line in enumerate(lines))
 
         return f"""Ты — преподаватель системной аналитики. Пишешь отзыв СТУДЕНТУ на его работу (обращайся на "ты" или безлично).
@@ -72,9 +90,9 @@ class AiCheckService:
 ## Задание
 {lesson_title}
 
-{task_description[:6000]}
+{task_description[:10000]}
 
-{f"Эталонное решение (ТОЛЬКО для твоего внутреннего сравнения, НЕ упоминай его студенту):{chr(10)}{correct_answer[:12000]}" if correct_answer else ""}
+{f"Эталонное решение (ТОЛЬКО для твоего внутреннего сравнения, НЕ упоминай его студенту):{chr(10)}{correct_answer[:20000]}" if correct_answer else ""}
 
 ## Решение студента (строки пронумерованы)
 {numbered_solution}
@@ -186,9 +204,38 @@ class AiCheckService:
             resp = requests.post(
                 OPENROUTER_URL, headers=headers, json=payload, timeout=60,
             )
-            resp.raise_for_status()
-            data = resp.json()
 
+            if resp.status_code >= 400:
+                api_message = ""
+                try:
+                    body = resp.json()
+                    err = body.get("error") if isinstance(body, dict) else None
+                    if isinstance(err, dict):
+                        api_message = err.get("message", "") or ""
+                    elif isinstance(err, str):
+                        api_message = err
+                except ValueError:
+                    api_message = resp.text[:300]
+
+                logger.error(
+                    "OpenRouter API %s: %s", resp.status_code, api_message or resp.text[:300],
+                )
+
+                lower = api_message.lower()
+                if "context" in lower and ("length" in lower or "window" in lower or "token" in lower):
+                    return {"error": "Решение слишком большое для проверки ИИ. Попробуйте уменьшить размер кода."}
+                if resp.status_code == 401:
+                    return {"error": "Неверный API-ключ OpenRouter."}
+                if resp.status_code == 402:
+                    return {"error": "Недостаточно средств на балансе OpenRouter."}
+                if resp.status_code == 429:
+                    return {"error": "Превышен лимит запросов к ИИ. Попробуйте позже."}
+                if resp.status_code == 400:
+                    return {"error": f"Запрос отклонён ИИ: {api_message or 'Bad Request'}"}
+
+                return {"error": f"Ошибка ИИ ({resp.status_code}): {api_message or 'неизвестная ошибка'}"}
+
+            data = resp.json()
             content = data["choices"][0]["message"]["content"].strip()
 
             json_match = re.search(r'\{.*\}', content, re.DOTALL)
@@ -198,8 +245,8 @@ class AiCheckService:
             return json.loads(content)
 
         except requests.RequestException as e:
-            logger.error("OpenRouter API error: %s", e)
-            return {"error": f"Ошибка API: {e}"}
+            logger.error("OpenRouter request error: %s", e)
+            return {"error": f"Ошибка сети при обращении к ИИ: {e}"}
         except (json.JSONDecodeError, KeyError, IndexError) as e:
             logger.error("Failed to parse LLM response: %s", e)
             return {"error": f"Ошибка разбора ответа ИИ: {e}"}

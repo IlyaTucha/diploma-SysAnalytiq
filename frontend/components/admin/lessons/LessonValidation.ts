@@ -14,6 +14,7 @@ export const validateLessonForm = (lessonFormData: any, moduleType: string) => {
             newErrors.correctAnswer = true;
           } else {
             const hasIncompleteChecks = config.checks.some((c: any) => {
+              if (!c.type) return true;
               if (c.type === 'table_exists') return !c.target;
               if (c.type === 'table_count') return !c.value;
               if (c.type === 'relationship_count') return !c.value;
@@ -49,6 +50,8 @@ export const validateLessonForm = (lessonFormData: any, moduleType: string) => {
             newErrors.correctAnswer = true;
           } else {
             const hasIncompleteChecks = config.checks.some((c: any) => {
+              if (!c.type) return true;
+              if (c.type === 'element_count') return !c.element || !c.value;
               if (c.type === 'node_exists') return !c.target;
               if (c.type === 'node_count') return !c.value;
               if (c.type === 'edge_count') return !c.value;
@@ -81,6 +84,7 @@ export const validateLessonForm = (lessonFormData: any, moduleType: string) => {
             newErrors.correctAnswer = true;
           } else {
             const hasIncompleteChecks = config.checks.some((c: any) => {
+              if (!c.type) return true;
               if (c.type === 'element_exists') return !c.target;
               return !c.value;
             });
@@ -111,6 +115,7 @@ export const validateLessonForm = (lessonFormData: any, moduleType: string) => {
             newErrors.correctAnswer = true;
           } else {
             const hasIncompleteChecks = config.checks.some((c: any) => {
+              if (!c.type) return true;
               if (c.type === 'path_exists' || c.type === 'operation_exists') return !c.target;
               return !c.value;
             });

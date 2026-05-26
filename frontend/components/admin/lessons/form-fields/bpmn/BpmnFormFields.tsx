@@ -11,6 +11,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Circle,
+  CircleDot,
+  Square,
+  User,
+  Cog,
+  Send,
+  Inbox,
+  Diamond,
+  Rows3,
+  Layers,
+  ArrowUpRight,
+  ArrowDownRight,
+  Boxes,
+  Hash,
+  Spline,
+} from 'lucide-react';
 
 interface BpmnFormFieldsProps {
   correctAnswer: string;
@@ -18,7 +35,7 @@ interface BpmnFormFieldsProps {
   hasError?: boolean;
 }
 
-type CheckType = 'node_count' | 'edge_count' | 'node_exists' | 'edge_exists' | 'lane_count' | 'gateway_count' | 'element_count';
+type CheckType = '' | 'node_count' | 'edge_count' | 'node_exists' | 'edge_exists' | 'lane_count' | 'gateway_count' | 'element_count';
 
 interface BpmnCheck extends BaseCheck {
   type: CheckType;
@@ -86,31 +103,32 @@ export function BpmnFormFields({ correctAnswer, onChange, hasError }: BpmnFormFi
   };
 
   const checkTypes = [
-    { value: 'element_count', label: 'Количество по типу элемента' },
-    { value: 'node_count', label: 'Количество элементов' },
-    { value: 'edge_count', label: 'Количество связей' },
-    { value: 'lane_count', label: 'Количество дорожек' },
-    { value: 'gateway_count', label: 'Количество шлюзов' },
+    { value: 'element_count', label: 'Количество по типу элемента', icon: Boxes },
+    { value: 'node_count', label: 'Количество элементов', icon: Hash },
+    { value: 'edge_count', label: 'Количество связей', icon: Spline },
+    { value: 'lane_count', label: 'Количество дорожек', icon: Rows3 },
+    { value: 'gateway_count', label: 'Количество шлюзов', icon: Diamond },
   ];
 
   const bpmnElementTypes = [
-    { value: 'startEvent', label: 'Начальное событие', icon: '○' },
-    { value: 'endEvent', label: 'Конечное событие', icon: '◉' },
-    { value: 'task', label: 'Задача', icon: '▭' },
-    { value: 'userTask', label: 'Пользовательская задача', icon: '👤▭' },
-    { value: 'serviceTask', label: 'Сервисная задача', icon: '⚙▭' },
-    { value: 'sendTask', label: 'Задача отправки', icon: '✉▭' },
-    { value: 'receiveTask', label: 'Задача приёма', icon: '📩▭' },
-    { value: 'exclusiveGateway', label: 'Эксклюзивный шлюз (XOR)', icon: '◇✕' },
-    { value: 'parallelGateway', label: 'Параллельный шлюз (AND)', icon: '◇+' },
-    { value: 'inclusiveGateway', label: 'Инклюзивный шлюз (OR)', icon: '◇○' },
-    { value: 'lane', label: 'Дорожка', icon: '═' },
-    { value: 'participant', label: 'Пул / Участник', icon: '▬' },
-    { value: 'intermediateThrowEvent', label: 'Промежуточное событие (отправка)', icon: '◎↑' },
-    { value: 'intermediateCatchEvent', label: 'Промежуточное событие (приём)', icon: '◎↓' },
+    { value: 'startEvent', label: 'Начальное событие', icon: Circle },
+    { value: 'endEvent', label: 'Конечное событие', icon: CircleDot },
+    { value: 'task', label: 'Задача', icon: Square },
+    { value: 'userTask', label: 'Пользовательская задача', icon: User },
+    { value: 'serviceTask', label: 'Сервисная задача', icon: Cog },
+    { value: 'sendTask', label: 'Задача отправки', icon: Send },
+    { value: 'receiveTask', label: 'Задача приёма', icon: Inbox },
+    { value: 'exclusiveGateway', label: 'Эксклюзивный шлюз (XOR)', icon: Diamond },
+    { value: 'parallelGateway', label: 'Параллельный шлюз (AND)', icon: Diamond },
+    { value: 'inclusiveGateway', label: 'Инклюзивный шлюз (OR)', icon: Diamond },
+    { value: 'lane', label: 'Дорожка', icon: Rows3 },
+    { value: 'participant', label: 'Пул / Участник', icon: Layers },
+    { value: 'intermediateThrowEvent', label: 'Промежуточное событие (отправка)', icon: ArrowUpRight },
+    { value: 'intermediateCatchEvent', label: 'Промежуточное событие (приём)', icon: ArrowDownRight },
   ];
 
   const renderCheckFields = (check: BpmnCheck, updateCheck: (updates: Partial<BpmnCheck>) => void) => {
+    if (!check.type) return null;
     if (check.type === 'element_count') {
       return (
         <>
@@ -127,14 +145,17 @@ export function BpmnFormFields({ correctAnswer, onChange, hasError }: BpmnFormFi
                   <SelectValue placeholder="Выберите тип элемента" />
                 </SelectTrigger>
                 <SelectContent>
-                  {bpmnElementTypes.map((el) => (
-                    <SelectItem key={el.value} value={el.value}>
-                      <span className="flex items-center gap-2">
-                        <span className="text-base w-6 text-center font-mono">{el.icon}</span>
-                        <span>{el.label}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
+                  {bpmnElementTypes.map((el) => {
+                    const Icon = el.icon;
+                    return (
+                      <SelectItem key={el.value} value={el.value}>
+                        <span className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                          <span>{el.label}</span>
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <OperatorSelector 
@@ -266,7 +287,7 @@ export function BpmnFormFields({ correctAnswer, onChange, hasError }: BpmnFormFi
       renderGlobalOptions={renderGlobalOptions}
       defaultCheck={{
         id: '',
-        type: 'element_count',
+        type: '',
         target: '',
         value: '',
         operator: '='
