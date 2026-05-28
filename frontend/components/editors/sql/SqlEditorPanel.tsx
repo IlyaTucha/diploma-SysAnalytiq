@@ -212,6 +212,7 @@ export function SqlEditorPanel({
                   automaticLayout: true,
                   padding: { top: 16, bottom: 16 },
                   readOnly: readOnly,
+                  mouseWheelZoom: true,
                 }}
               />
             </div>

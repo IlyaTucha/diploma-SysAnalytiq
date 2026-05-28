@@ -96,7 +96,8 @@ export function SwaggerEditorPanel({
                     scrollBeyondLastLine: false,
                     automaticLayout: true,
                     padding: { top: 16, bottom: 16 },
-                    readOnly: readOnly
+                    readOnly: readOnly,
+                    mouseWheelZoom: true,
                   }}
                 />
               </div>

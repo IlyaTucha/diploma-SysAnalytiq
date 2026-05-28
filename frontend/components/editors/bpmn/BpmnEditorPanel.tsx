@@ -218,7 +218,8 @@ export function BpmnEditorPanel({
                   lineNumbers: 'on',
                   scrollBeyondLastLine: false,
                   automaticLayout: true,
-                  readOnly: readOnly
+                  readOnly: readOnly,
+                  mouseWheelZoom: true,
                 }}
               />
             </div>
