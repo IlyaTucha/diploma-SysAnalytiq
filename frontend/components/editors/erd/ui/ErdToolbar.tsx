@@ -1,6 +1,7 @@
 import { Panel } from 'reactflow';
-import { Spline, Activity } from 'lucide-react';
+import { Spline, Activity, Maximize2, Minimize2 } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Button } from '@/components/ui/button';
 import { UndoRedoControls } from '@/components/ui/undo-redo-controls';
 
 interface ErdToolbarProps {
@@ -10,6 +11,8 @@ interface ErdToolbarProps {
     canRedo: boolean;
     edgeType: string;
     setEdgeType: (type: string) => void;
+    isFullscreen: boolean;
+    onToggleFullscreen: () => void;
 }
 
 export const ErdToolbar = ({
@@ -18,17 +21,19 @@ export const ErdToolbar = ({
     canUndo,
     canRedo,
     edgeType,
-    setEdgeType
+    setEdgeType,
+    isFullscreen,
+    onToggleFullscreen
 }: ErdToolbarProps) => {
     return (
         <>
             <Panel position="top-left" className="flex gap-2 items-center" style={{ zIndex: 50 }}>
                 <div className="bg-white dark:bg-zinc-950 p-1 rounded-md border shadow-sm flex gap-1">
-                    <UndoRedoControls 
-                        onUndo={onUndo} 
-                        onRedo={onRedo} 
-                        canUndo={canUndo} 
-                        canRedo={canRedo} 
+                    <UndoRedoControls
+                        onUndo={onUndo}
+                        onRedo={onRedo}
+                        canUndo={canUndo}
+                        canRedo={canRedo}
                         variant="ghost"
                     />
                 </div>
@@ -43,6 +48,17 @@ export const ErdToolbar = ({
                             <Spline className="h-4 w-4" />
                         </ToggleGroupItem>
                     </ToggleGroup>
+                </div>
+                <div className="bg-white dark:bg-zinc-950 p-1 rounded-md border shadow-sm">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onToggleFullscreen}
+                        title={isFullscreen ? 'Свернуть (Esc)' : 'Развернуть на весь экран'}
+                        aria-label={isFullscreen ? 'Свернуть' : 'Развернуть'}
+                    >
+                        {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    </Button>
                 </div>
             </Panel>
         </>

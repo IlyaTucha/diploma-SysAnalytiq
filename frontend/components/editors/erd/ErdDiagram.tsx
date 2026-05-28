@@ -39,9 +39,10 @@ interface ErdVisualEditorProps {
     code: string;
     readOnly?: boolean;
     initialLayout?: ErdLayout | null;
+    fullscreenTargetRef?: React.RefObject<HTMLElement | null>;
 }
 
-const ErdVisualEditorContent = forwardRef<ErdVisualEditorRef, ErdVisualEditorProps>(({ code, readOnly = false, initialLayout }, ref) => {
+const ErdVisualEditorContent = forwardRef<ErdVisualEditorRef, ErdVisualEditorProps>(({ code, readOnly = false, initialLayout, fullscreenTargetRef }, ref) => {
   const nodeTypes = useMemo(() => ({ table: TableNode }), []);
   const edgeTypes = useMemo(() => ({ 
       'custom-bezier': CustomBezierEdge,
@@ -73,6 +74,46 @@ const ErdVisualEditorContent = forwardRef<ErdVisualEditorRef, ErdVisualEditorPro
   const [history, setHistory] = useState<{nodes: Node[], edges: Edge[]}[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => {
+      const target = fullscreenTargetRef?.current ?? wrapperRef.current;
+      setIsFullscreen(document.fullscreenElement === target);
+    };
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, [fullscreenTargetRef]);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        const target = fullscreenTargetRef?.current ?? wrapperRef.current;
+        await target?.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (e) {
+      console.error('Fullscreen toggle failed:', e);
+    }
+  }, [fullscreenTargetRef]);
+
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      if (e.button === 1) e.preventDefault();
+    };
+    el.addEventListener('wheel', onWheel, { passive: false, capture: true });
+    el.addEventListener('mousedown', onMouseDown, { capture: true });
+    return () => {
+      el.removeEventListener('wheel', onWheel, { capture: true } as EventListenerOptions);
+      el.removeEventListener('mousedown', onMouseDown, { capture: true } as EventListenerOptions);
+    };
+  }, []);
 
   const addToHistory = useCallback((newNodes: Node[], newEdges: Edge[]) => {
       setHistoryIndex(currentIndex => {
@@ -443,7 +484,11 @@ const ErdVisualEditorContent = forwardRef<ErdVisualEditorRef, ErdVisualEditorPro
   }, [getNodes, setEdges]);
 
     return (
-        <div ref={wrapperRef} className="w-full h-full bg-slate-50 dark:bg-zinc-950 relative" style={{ width: '100%', height: '100%' }}>
+        <div
+            ref={wrapperRef}
+            className="w-full h-full bg-slate-50 dark:bg-zinc-950 relative"
+            style={{ width: '100%', height: '100%' }}
+        >
                 <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -476,13 +521,15 @@ const ErdVisualEditorContent = forwardRef<ErdVisualEditorRef, ErdVisualEditorPro
                 <Controls />
                 <MiniMap className="!bg-white dark:!bg-zinc-950 border dark:border-zinc-800" />
                 {!readOnly && (
-                  <ErdToolbar 
+                  <ErdToolbar
                       onUndo={handleUndo}
                       onRedo={handleRedo}
                       canUndo={historyIndex > 0}
                       canRedo={historyIndex < history.length - 1}
                       edgeType={edgeType}
                       setEdgeType={setEdgeType}
+                      isFullscreen={isFullscreen}
+                      onToggleFullscreen={toggleFullscreen}
                   />
                 )}
                 </ReactFlow>

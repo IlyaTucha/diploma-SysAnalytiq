@@ -36,6 +36,7 @@ export const ErdEditorPanel = forwardRef<ErdEditorPanelRef, ErdEditorPanelProps>
   const visualEditorRef = useRef<ErdVisualEditorRef>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const lastSentValue = useRef(code);
+  const fullscreenTargetRef = useRef<HTMLDivElement>(null);
 
   useImperativeHandle(ref, () => ({
     getLayout: () => visualEditorRef.current?.getLayout() ?? { nodePositions: {}, edgeData: {} },
@@ -358,7 +359,7 @@ export const ErdEditorPanel = forwardRef<ErdEditorPanelRef, ErdEditorPanelProps>
   }, [onChange, externalOnMount]);
 
   return (
-    <div className="h-full flex-1 flex flex-col" style={{ height }}>
+    <div ref={fullscreenTargetRef} className="h-full flex-1 flex flex-col bg-background" style={{ height }}>
       <div className="flex-1 border rounded-lg overflow-hidden relative flex flex-col">
         <EditorHeader
           icon={<GitBranch className="w-4 h-4 text-muted-foreground" />}
@@ -406,6 +407,7 @@ export const ErdEditorPanel = forwardRef<ErdEditorPanelRef, ErdEditorPanelProps>
                     suggestOnTriggerCharacters: false,
                     snippetSuggestions: 'none',
                     wordBasedSuggestions: 'off',
+                    mouseWheelZoom: true,
                   }}
                 />
               </div>
@@ -413,7 +415,7 @@ export const ErdEditorPanel = forwardRef<ErdEditorPanelRef, ErdEditorPanelProps>
             <ResizableHandle />
             <ResizablePanel defaultSize={60} minSize={20}>
               <div className={`h-full flex flex-col p-0 ${theme === 'dark' ? 'dark bg-zinc-950' : 'bg-white'}`}>
-                <ErdDiagram key={editorKey} code={code} ref={visualEditorRef} readOnly={readOnly} initialLayout={initialLayout} />
+                <ErdDiagram key={editorKey} code={code} ref={visualEditorRef} readOnly={readOnly} initialLayout={initialLayout} fullscreenTargetRef={fullscreenTargetRef} />
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
