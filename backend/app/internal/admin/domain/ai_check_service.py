@@ -30,7 +30,8 @@ class AiCheckService:
         student_solution = submission.student_solution or ''
         lesson_title = submission.lesson.title or ''
 
-        if submission.lesson.module.slug == 'bpmn':
+        is_bpmn = submission.lesson.module.slug == 'bpmn'
+        if is_bpmn:
             student_solution = AiCheckService._strip_bpmn_layout(student_solution)
 
         other_solutions = list(
@@ -39,6 +40,8 @@ class AiCheckService:
             .exclude(student=submission.student)
             .values_list('student_solution', flat=True)[:10]
         )
+        if is_bpmn:
+            other_solutions = [AiCheckService._strip_bpmn_layout(s or '') for s in other_solutions]
 
         prompt = AiCheckService._build_prompt(
             lesson_title, task_description, correct_answer,
