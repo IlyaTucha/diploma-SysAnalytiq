@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/components/contexts/ThemeProvider';
 import Editor from '@monaco-editor/react';
-import { Code, Workflow, LayoutTemplate,  Undo, Redo, Maximize, Upload, Download, Image } from 'lucide-react';
+import { Code, Workflow, LayoutTemplate,  Undo, Redo, Maximize, Upload, Download, Image, Maximize2, Minimize2 } from 'lucide-react';
 import { EditorActions } from '@/components/ui/EditorActions';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { BpmnEditor, BpmnEditorRef } from './BpmnEditor';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditorHeader } from '@/components/ui/EditorHeader';
@@ -30,7 +31,29 @@ export function BpmnEditorPanel({
   const [viewMode, setViewMode] = useState<'visual' | 'code'>('visual');
   const editorRef = useRef<BpmnEditorRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+  const fullscreenContainerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => {
+      setIsFullscreen(document.fullscreenElement === fullscreenContainerRef.current);
+    };
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await fullscreenContainerRef.current?.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (e) {
+      console.error('Fullscreen toggle failed:', e);
+    }
+  };
+
   const [history, setHistory] = useState<string[]>([bpmnCode]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const isUndoing = useRef(false);
@@ -133,7 +156,7 @@ export function BpmnEditorPanel({
   const visualButtons = [
     {
       label: 'Центрировать',
-      icon: <Maximize className="w-4 h-4 mr-2" />, 
+      icon: <Maximize className="w-4 h-4 mr-2" />,
       onClick: () => editorRef.current?.center(),
       title: 'Центрировать',
     },
@@ -165,7 +188,7 @@ export function BpmnEditorPanel({
   ] : [];
 
   return (
-    <div className="h-full flex flex-col border rounded-xl overflow-hidden" style={{ height }}>
+    <div ref={fullscreenContainerRef} className="h-full flex flex-col border rounded-xl overflow-hidden bg-background" style={{ height }}>
       <input
         type="file"
         ref={fileInputRef}
@@ -227,6 +250,17 @@ export function BpmnEditorPanel({
 
           <div className={viewMode === 'visual' ? 'flex flex-col h-full min-h-0' : 'hidden'}>
             <div className="flex-1 relative bg-white overflow-hidden h-full min-h-0 flex flex-col">
+              <div className="absolute top-2 right-2 z-50 bg-white dark:bg-zinc-950 p-1 rounded-md border shadow-sm">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleFullscreen}
+                  title={isFullscreen ? 'Свернуть (Esc)' : 'Развернуть на весь экран'}
+                  aria-label={isFullscreen ? 'Свернуть' : 'Развернуть'}
+                >
+                  {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </Button>
+              </div>
               <BpmnEditor
                 key={editorKey}
                 ref={editorRef}

@@ -13,6 +13,7 @@ interface ErdToolbarProps {
     setEdgeType: (type: string) => void;
     isFullscreen: boolean;
     onToggleFullscreen: () => void;
+    readOnly?: boolean;
 }
 
 export const ErdToolbar = ({
@@ -23,32 +24,37 @@ export const ErdToolbar = ({
     edgeType,
     setEdgeType,
     isFullscreen,
-    onToggleFullscreen
+    onToggleFullscreen,
+    readOnly = false
 }: ErdToolbarProps) => {
     return (
         <>
-            <Panel position="top-left" className="flex gap-2 items-center" style={{ zIndex: 50 }}>
-                <div className="bg-white dark:bg-zinc-950 p-1 rounded-md border shadow-sm flex gap-1">
-                    <UndoRedoControls
-                        onUndo={onUndo}
-                        onRedo={onRedo}
-                        canUndo={canUndo}
-                        canRedo={canRedo}
-                        variant="ghost"
-                    />
-                </div>
-            </Panel>
+            {!readOnly && (
+                <Panel position="top-left" className="flex gap-2 items-center" style={{ zIndex: 50 }}>
+                    <div className="bg-white dark:bg-zinc-950 p-1 rounded-md border shadow-sm flex gap-1">
+                        <UndoRedoControls
+                            onUndo={onUndo}
+                            onRedo={onRedo}
+                            canUndo={canUndo}
+                            canRedo={canRedo}
+                            variant="ghost"
+                        />
+                    </div>
+                </Panel>
+            )}
             <Panel position="top-right" className="flex gap-2 items-center" style={{ zIndex: 50 }}>
-                <div className="bg-white dark:bg-zinc-950 p-1 rounded-md border shadow-sm">
-                    <ToggleGroup type="single" value={edgeType} onValueChange={(val) => { if (val) setEdgeType(val); }}>
-                        <ToggleGroupItem value="smoothstep" size="sm" aria-label="Straight Lines" title="Прямые линии">
-                            <Activity className="h-4 w-4" />
-                        </ToggleGroupItem>
-                        <ToggleGroupItem value="default" size="sm" aria-label="Curved Lines" title="Изогнутые линии">
-                            <Spline className="h-4 w-4" />
-                        </ToggleGroupItem>
-                    </ToggleGroup>
-                </div>
+                {!readOnly && (
+                    <div className="bg-white dark:bg-zinc-950 p-1 rounded-md border shadow-sm">
+                        <ToggleGroup type="single" value={edgeType} onValueChange={(val) => { if (val) setEdgeType(val); }}>
+                            <ToggleGroupItem value="smoothstep" size="sm" aria-label="Straight Lines" title="Прямые линии">
+                                <Activity className="h-4 w-4" />
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="default" size="sm" aria-label="Curved Lines" title="Изогнутые линии">
+                                <Spline className="h-4 w-4" />
+                            </ToggleGroupItem>
+                        </ToggleGroup>
+                    </div>
+                )}
                 <div className="bg-white dark:bg-zinc-950 p-1 rounded-md border shadow-sm">
                     <Button
                         variant="ghost"

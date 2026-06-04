@@ -520,18 +520,17 @@ const ErdVisualEditorContent = forwardRef<ErdVisualEditorRef, ErdVisualEditorPro
                 <Background color="#999" gap={16} />
                 <Controls />
                 <MiniMap className="!bg-white dark:!bg-zinc-950 border dark:border-zinc-800" />
-                {!readOnly && (
-                  <ErdToolbar
-                      onUndo={handleUndo}
-                      onRedo={handleRedo}
-                      canUndo={historyIndex > 0}
-                      canRedo={historyIndex < history.length - 1}
-                      edgeType={edgeType}
-                      setEdgeType={setEdgeType}
-                      isFullscreen={isFullscreen}
-                      onToggleFullscreen={toggleFullscreen}
-                  />
-                )}
+                <ErdToolbar
+                    onUndo={handleUndo}
+                    onRedo={handleRedo}
+                    canUndo={historyIndex > 0}
+                    canRedo={historyIndex < history.length - 1}
+                    edgeType={edgeType}
+                    setEdgeType={setEdgeType}
+                    isFullscreen={isFullscreen}
+                    onToggleFullscreen={toggleFullscreen}
+                    readOnly={readOnly}
+                />
                 </ReactFlow>
         </div>
     );

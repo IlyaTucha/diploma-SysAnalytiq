@@ -547,8 +547,19 @@ def _validate_plantuml_solution(student_code: str, config: dict) -> dict:
     if '@enduml' not in student_code:
         return {"valid": False, "error": "PlantUML диаграмма должна заканчиваться @enduml"}
 
-    diagram_types = ['class', 'interface', 'enum', 'component', 'actor', 'usecase']
-    if not any(t in student_code.lower() for t in diagram_types):
+    styling_prefixes = (
+        'skinparam', 'title', 'header', 'footer', 'caption', 'scale',
+        'hide', 'show', 'left to right', 'top to bottom', 'autonumber',
+        '!', 'legend', 'end legend',
+    )
+    content_lines = [
+        line.strip() for line in student_code.split('\n')
+        if line.strip()
+        and not line.strip().startswith("'")
+        and not line.strip().startswith('@')
+        and not line.strip().lower().startswith(styling_prefixes)
+    ]
+    if not content_lines:
         return {"valid": False, "error": "PlantUML диаграмма должна содержать хотя бы один элемент диаграммы"}
 
     def parse_plantuml(puml: str):
