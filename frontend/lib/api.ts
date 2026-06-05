@@ -36,20 +36,30 @@ export function clearTokens() {
   localStorage.removeItem('refresh_token');
 }
 
-async function refreshAccessToken(): Promise<string | null> {
-  try {
-    const res = await fetch(`${API_BASE}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    setAccessToken(data.access);
-    return data.access;
-  } catch {
-    return null;
-  }
+let refreshPromise: Promise<string | null> | null = null;
+
+function refreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      setAccessToken(data.access);
+      return data.access;
+    } catch {
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 }
 
 async function apiFetch<T>(
