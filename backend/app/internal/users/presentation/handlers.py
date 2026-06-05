@@ -1,8 +1,13 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.http import HttpResponse
+from django.utils import timezone
 from ninja import Router
 from ninja_jwt.authentication import JWTAuth
-from ninja_jwt.tokens import RefreshToken
+from ninja_jwt.tokens import RefreshToken, UntypedToken
+from ninja_jwt.settings import api_settings
+from ninja_jwt.token_blacklist.models import BlacklistedToken
 from ninja_jwt.exceptions import TokenError
 from ninja.errors import HttpError
 from ..domain.entities import UserSchema, AuthResponse, TokenResponse, VKLoginSchema, UpdateProfileSchema, ToggleNotificationsSchema, TelegramBindSchema
@@ -13,6 +18,29 @@ router = Router()
 
 REFRESH_COOKIE_NAME = 'refresh_token'
 REFRESH_COOKIE_PATH = '/api'
+REFRESH_GRACE_SECONDS = 10
+
+
+def _accept_within_grace(raw: str):
+    """Принимает только что отозванный при ротации refresh-токен в течение
+    короткого окна. Нужно для случая, когда две вкладки обновляются почти
+    одновременно: первая гасит токен блэклистом, вторая приходит с тем же
+    токеном чуть позже. Подпись и срок проверяются строго (UntypedToken),
+    послабление касается только блэклиста и только в пределах окна."""
+    try:
+        UntypedToken(raw)
+    except TokenError:
+        return None
+    refresh = RefreshToken(raw, verify=False)
+    jti = refresh.payload.get(api_settings.JTI_CLAIM)
+    if not jti:
+        return None
+    bl = BlacklistedToken.objects.filter(token__jti=jti).first()
+    if bl is None:
+        return None
+    if timezone.now() - bl.blacklisted_at > timedelta(seconds=REFRESH_GRACE_SECONDS):
+        return None
+    return refresh
 
 
 def _set_refresh_cookie(response: HttpResponse, refresh_token: str):
@@ -58,8 +86,10 @@ def refresh_token(request, response: HttpResponse):
     try:
         refresh = RefreshToken(raw)
     except TokenError:
-        response.delete_cookie(REFRESH_COOKIE_NAME, path=REFRESH_COOKIE_PATH)
-        raise HttpError(401, "Invalid refresh token")
+        refresh = _accept_within_grace(raw)
+        if refresh is None:
+            response.delete_cookie(REFRESH_COOKIE_NAME, path=REFRESH_COOKIE_PATH)
+            raise HttpError(401, "Invalid refresh token")
     access = str(refresh.access_token)
     # Ротация: гасим использованный refresh-токен и выдаём новый с обновлённым
     # сроком, чтобы активная сессия продлевалась (скользящее окно в 7 дней).
