@@ -14,13 +14,13 @@ GROUPS = [
 ]
 
 STUDENTS = [
-    {"name": "Иван Иванов", "tg": "ivan_ivanov", "group": "ФТ-3-1"},
-    {"name": "Сидор Сидоров", "tg": "sidor_sidorov", "group": "ФТ-3-1"},
-    {"name": "Мария Кузнецова", "tg": "maria_kuz", "group": "ФТ-3-1"},
-    {"name": "Пётр Петров", "tg": "petr_petrov", "group": "ФТ-3-2"},
-    {"name": "Анна Смирнова", "tg": "anna_smirnova", "group": "ФТ-3-2"},
-    {"name": "Алексей Попов", "tg": "alex_popov", "group": "КН-3"},
-    {"name": "Ольга Васильева", "tg": "olga_vasilyeva", "group": "КН-3"},
+    {"name": "Иван Иванов", "username": "ivan_ivanov", "group": "ФТ-3-1"},
+    {"name": "Сидор Сидоров", "username": "sidor_sidorov", "group": "ФТ-3-1"},
+    {"name": "Мария Кузнецова", "username": "maria_kuz", "group": "ФТ-3-1"},
+    {"name": "Пётр Петров", "username": "petr_petrov", "group": "ФТ-3-2"},
+    {"name": "Анна Смирнова", "username": "anna_smirnova", "group": "ФТ-3-2"},
+    {"name": "Алексей Попов", "username": "alex_popov", "group": "КН-3"},
+    {"name": "Ольга Васильева", "username": "olga_vasilyeva", "group": "КН-3"},
 ]
 
 
@@ -52,13 +52,12 @@ class Command(BaseCommand):
         self.stdout.write("\nCreating students...")
         students = {}
         for idx, s in enumerate(STUDENTS):
-            dummy_id = 900000000 + idx
+            dummy_vk_id = 900000000 + idx
             user, created = User.objects.get_or_create(
-                telegram_username=s["tg"],
+                username=s["username"],
                 defaults={
-                    "username": s["tg"],
                     "name": s["name"],
-                    "telegram_id": dummy_id,
+                    "vk_id": dummy_vk_id,
                     "first_name": s["name"].split()[0],
                     "last_name": " ".join(s["name"].split()[1:]),
                     "group": groups[s["group"]],
@@ -67,7 +66,7 @@ class Command(BaseCommand):
             if not created and user.group != groups[s["group"]]:
                 user.group = groups[s["group"]]
                 user.save(update_fields=["group"])
-            students[s["tg"]] = user
+            students[s["username"]] = user
             self.stdout.write(
                 f"  Student {s['name']}: {'created' if created else 'exists'}"
             )
@@ -76,8 +75,6 @@ class Command(BaseCommand):
         admin, created = User.objects.get_or_create(
             username="admin_sysanalytiq",
             defaults={
-                "telegram_username": "admin_sysanalytiq",
-                "telegram_id": 100000000,
                 "first_name": "Админ",
                 "last_name": "Админович",
                 "name": "Администратор",
@@ -199,8 +196,8 @@ class Command(BaseCommand):
             ("olga_vasilyeva", "plantuml-intro"),
             ("sidor_sidorov", "swagger-intro"),
         ]
-        for tg, slug in pairs:
-            student = students.get(tg)
+        for username, slug in pairs:
+            student = students.get(username)
             lesson = lessons.get(slug)
             if student and lesson:
                 _, created = Progress.objects.get_or_create(
