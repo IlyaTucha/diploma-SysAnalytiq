@@ -229,41 +229,68 @@ BPMN-решение — это XML из bpmn.io (студент рисует в 
         return ""
 
     @staticmethod
+    def _repair_json(text: str) -> str:
+        out = []
+        n = len(text)
+        in_str = False
+        i = 0
+        while i < n:
+            ch = text[i]
+            if not in_str:
+                out.append(ch)
+                if ch == '"':
+                    in_str = True
+                i += 1
+                continue
+            if ch == '\\':
+                out.append(ch)
+                if i + 1 < n:
+                    out.append(text[i + 1])
+                    i += 2
+                else:
+                    i += 1
+                continue
+            if ch == '"':
+                j = i + 1
+                while j < n and text[j] in ' \t\r\n':
+                    j += 1
+                nxt = text[j] if j < n else ''
+                if nxt in (',', '}', ']', ':', ''):
+                    out.append('"')
+                    in_str = False
+                else:
+                    out.append('\\"')
+                i += 1
+                continue
+            out.append(ch)
+            i += 1
+        return ''.join(out)
+
+    @staticmethod
     def _extract_json(content: str) -> dict:
         text = content.strip()
         if text.startswith("```"):
             text = re.sub(r'^```[a-zA-Z0-9]*\s*', '', text)
             text = re.sub(r'\s*```$', '', text).strip()
 
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError:
-            pass
-
+        candidates = [text]
         start = text.find('{')
-        if start != -1:
-            depth = 0
-            in_str = False
-            esc = False
-            for i in range(start, len(text)):
-                ch = text[i]
-                if in_str:
-                    if esc:
-                        esc = False
-                    elif ch == '\\':
-                        esc = True
-                    elif ch == '"':
-                        in_str = False
-                elif ch == '"':
-                    in_str = True
-                elif ch == '{':
-                    depth += 1
-                elif ch == '}':
-                    depth -= 1
-                    if depth == 0:
-                        return json.loads(text[start:i + 1])
+        end = text.rfind('}')
+        if start != -1 and end > start:
+            candidates.append(text[start:end + 1])
 
-        return json.loads(text)
+        last_err = None
+        for cand in candidates:
+            try:
+                return json.loads(cand)
+            except json.JSONDecodeError as e:
+                last_err = e
+            try:
+                return json.loads(AiCheckService._repair_json(cand))
+            except json.JSONDecodeError as e:
+                last_err = e
+
+        raise last_err
 
     @staticmethod
     def _call_llm(api_key: str, prompt: str) -> dict:
