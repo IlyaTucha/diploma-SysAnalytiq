@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import time
 
 import requests
 from django.conf import settings
@@ -211,11 +212,66 @@ BPMN-решение — это XML из bpmn.io (студент рисует в 
 
 Отвечай ТОЛЬКО JSON."""
 
+    _RETRYABLE_STATUSES = frozenset({403, 408, 409, 429, 500, 502, 503, 504})
+    _MAX_ATTEMPTS = 3
+
+    @staticmethod
+    def _error_message(resp: requests.Response) -> str:
+        try:
+            body = resp.json()
+            err = body.get("error") if isinstance(body, dict) else None
+            if isinstance(err, dict):
+                return err.get("message", "") or ""
+            if isinstance(err, str):
+                return err
+        except ValueError:
+            return resp.text[:300]
+        return ""
+
+    @staticmethod
+    def _extract_json(content: str) -> dict:
+        text = content.strip()
+        if text.startswith("```"):
+            text = re.sub(r'^```[a-zA-Z0-9]*\s*', '', text)
+            text = re.sub(r'\s*```$', '', text).strip()
+
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        start = text.find('{')
+        if start != -1:
+            depth = 0
+            in_str = False
+            esc = False
+            for i in range(start, len(text)):
+                ch = text[i]
+                if in_str:
+                    if esc:
+                        esc = False
+                    elif ch == '\\':
+                        esc = True
+                    elif ch == '"':
+                        in_str = False
+                elif ch == '"':
+                    in_str = True
+                elif ch == '{':
+                    depth += 1
+                elif ch == '}':
+                    depth -= 1
+                    if depth == 0:
+                        return json.loads(text[start:i + 1])
+
+        return json.loads(text)
+
     @staticmethod
     def _call_llm(api_key: str, prompt: str) -> dict:
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            "HTTP-Referer": getattr(settings, "SITE_URL", "") or "https://sysanalytiq.ru",
+            "X-Title": "SysAnalytiq",
         }
         payload = {
             "model": settings.OPENROUTER_MODEL,
@@ -224,25 +280,29 @@ BPMN-решение — это XML из bpmn.io (студент рисует в 
             "temperature": settings.OPENROUTER_TEMPERATURE,
         }
 
-        try:
-            resp = requests.post(
-                OPENROUTER_URL, headers=headers, json=payload, timeout=60,
-            )
+        last_error = "ИИ-проверка временно недоступна. Попробуйте ещё раз."
+
+        for attempt in range(1, AiCheckService._MAX_ATTEMPTS + 1):
+            try:
+                resp = requests.post(
+                    OPENROUTER_URL, headers=headers, json=payload, timeout=60,
+                )
+            except requests.RequestException as e:
+                logger.warning(
+                    "OpenRouter request error (попытка %s/%s): %s",
+                    attempt, AiCheckService._MAX_ATTEMPTS, e,
+                )
+                last_error = f"Ошибка сети при обращении к ИИ: {e}"
+                if attempt < AiCheckService._MAX_ATTEMPTS:
+                    time.sleep(2 ** (attempt - 1))
+                continue
 
             if resp.status_code >= 400:
-                api_message = ""
-                try:
-                    body = resp.json()
-                    err = body.get("error") if isinstance(body, dict) else None
-                    if isinstance(err, dict):
-                        api_message = err.get("message", "") or ""
-                    elif isinstance(err, str):
-                        api_message = err
-                except ValueError:
-                    api_message = resp.text[:300]
-
+                api_message = AiCheckService._error_message(resp)
                 logger.error(
-                    "OpenRouter API %s: %s", resp.status_code, api_message or resp.text[:300],
+                    "OpenRouter API %s (попытка %s/%s): %s",
+                    resp.status_code, attempt, AiCheckService._MAX_ATTEMPTS,
+                    api_message or resp.text[:300],
                 )
 
                 lower = api_message.lower()
@@ -252,25 +312,46 @@ BPMN-решение — это XML из bpmn.io (студент рисует в 
                     return {"error": "Неверный API-ключ OpenRouter."}
                 if resp.status_code == 402:
                     return {"error": "Недостаточно средств на балансе OpenRouter."}
-                if resp.status_code == 429:
-                    return {"error": "Превышен лимит запросов к ИИ. Попробуйте позже."}
                 if resp.status_code == 400:
                     return {"error": f"Запрос отклонён ИИ: {api_message or 'Bad Request'}"}
 
+                if resp.status_code in AiCheckService._RETRYABLE_STATUSES:
+                    if resp.status_code == 429:
+                        last_error = "Превышен лимит запросов к ИИ. Попробуйте позже."
+                    else:
+                        last_error = "ИИ-проверка временно недоступна (провайдер вернул ошибку). Попробуйте ещё раз."
+                    if attempt < AiCheckService._MAX_ATTEMPTS:
+                        time.sleep(2 ** (attempt - 1))
+                        continue
+                    return {"error": last_error}
+
                 return {"error": f"Ошибка ИИ ({resp.status_code}): {api_message or 'неизвестная ошибка'}"}
 
-            data = resp.json()
-            content = data["choices"][0]["message"]["content"].strip()
+            try:
+                data = resp.json()
+                content = data["choices"][0]["message"]["content"].strip()
+            except (ValueError, KeyError, IndexError) as e:
+                logger.warning(
+                    "Неожиданный формат ответа OpenRouter (попытка %s/%s): %s",
+                    attempt, AiCheckService._MAX_ATTEMPTS, e,
+                )
+                last_error = f"Ошибка разбора ответа ИИ: {e}"
+                if attempt < AiCheckService._MAX_ATTEMPTS:
+                    time.sleep(2 ** (attempt - 1))
+                    continue
+                return {"error": last_error}
 
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
-            if json_match:
-                content = json_match.group()
+            try:
+                return AiCheckService._extract_json(content)
+            except json.JSONDecodeError as e:
+                logger.warning(
+                    "Не удалось разобрать JSON от модели (попытка %s/%s): %s | начало ответа: %s",
+                    attempt, AiCheckService._MAX_ATTEMPTS, e, content[:300],
+                )
+                last_error = f"Ошибка разбора ответа ИИ: {e}"
+                if attempt < AiCheckService._MAX_ATTEMPTS:
+                    time.sleep(2 ** (attempt - 1))
+                    continue
+                return {"error": last_error}
 
-            return json.loads(content)
-
-        except requests.RequestException as e:
-            logger.error("OpenRouter request error: %s", e)
-            return {"error": f"Ошибка сети при обращении к ИИ: {e}"}
-        except (json.JSONDecodeError, KeyError, IndexError) as e:
-            logger.error("Failed to parse LLM response: %s", e)
-            return {"error": f"Ошибка разбора ответа ИИ: {e}"}
+        return {"error": last_error}
