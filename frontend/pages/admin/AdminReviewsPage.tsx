@@ -376,12 +376,15 @@ export default function AdminReviews() {
         parts.push(result.verdict);
       }
 
-      // Невыполненные требования
-      const missingReqs = result.missingRequirements || result.missing_requirements;
-      if (missingReqs && missingReqs.length > 0) {
-        parts.push('\nНе выполнено:');
-        missingReqs.forEach((req: string) => {
-          parts.push(`• ${req}`);
+      // Что требуется сделать — список действий по каждой ошибке/замечанию
+      const todos = (result.issues || [])
+        .filter((c: any) => (c.severity || 'error') !== 'suggestion')
+        .map((c: any) => (c.fix || c.suggestion || '').trim())
+        .filter(Boolean);
+      if (todos.length > 0) {
+        parts.push('\nЧто требуется сделать:');
+        todos.forEach((t: string) => {
+          parts.push(`• ${t}`);
         });
       }
 
