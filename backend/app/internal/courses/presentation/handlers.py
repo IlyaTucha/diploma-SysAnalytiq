@@ -82,7 +82,7 @@ def reorder_lessons(request, slug: str, data: LessonReorderSchema):
     return EducationService.reorder_lessons(slug, data.lesson_ids)
 
 
-@router.post("/lessons/{lesson_id}/validate")
+@router.post("/lessons/{lesson_id}/validate", auth=JWTAuth())
 def validate_lesson_solution(request, lesson_id: str, data: LessonValidateRequest):
     lesson = EducationService.get_lesson(lesson_id)
     if not lesson:
@@ -219,6 +219,21 @@ def _validate_erd_solution(student_code: str, config: dict) -> dict:
 
 
 
+_SQLITE_OK = 0
+_SQLITE_DENY = 1
+_SQLITE_SELECT = 21
+_SQLITE_READ = 20
+_SQLITE_FUNCTION = 31
+_SQLITE_RECURSIVE = 33
+_SQL_READONLY_ACTIONS = frozenset({_SQLITE_SELECT, _SQLITE_READ, _SQLITE_FUNCTION, _SQLITE_RECURSIVE})
+
+
+def _sql_readonly_authorizer(action, arg1, arg2, db_name, trigger_or_view):
+    if action in _SQL_READONLY_ACTIONS:
+        return _SQLITE_OK
+    return _SQLITE_DENY
+
+
 def _get_sql_mock_db():
     """Создание in-memory SQLite БД с тестовыми данными (зеркало frontend SqlMock.ts)."""
     import sqlite3
@@ -244,19 +259,35 @@ def _get_sql_mock_db():
     _REVIEWS = [(1,1,1,5,'Отличный ноутбук!'),(2,2,2,4,'Хороший смартфон за свои деньги'),(3,3,3,5,'Понятная книга для начинающих'),(4,4,5,3,'Средняя клавиатура'),(5,5,6,5,'Великолепный монитор'),(6,1,4,4,'Хорошее звучание'),(7,7,7,5,'Отличная книга по БД'),(8,9,9,4,'Удобный планшет для работы'),(9,10,10,5,'Лучшая книга по Python'),(10,11,11,3,'Качество среднее'),(11,12,1,5,'Быстрый и надёжный'),(12,13,12,4,'Хороший звук для стримов'),(13,14,14,5,'Быстрый SSD, рекомендую'),(14,15,22,4,'Удобное кресло'),(15,16,15,4,'Стабильный сигнал WiFi'),(16,17,13,5,'Хороший учебник по JS'),(17,18,25,3,'Печатает медленно'),(18,19,16,5,'Классическая книга по алгоритмам'),(19,20,17,4,'Чистый звук'),(20,21,18,4,'Компактный и удобный хаб'),(21,22,23,5,'Прочный и просторный стол'),(22,23,3,4,'Хорошо объясняет основы SQL'),(23,24,29,5,'Отличный планшет для рисования'),(24,25,19,4,'Ноутбук не перегревается'),(25,26,21,3,'Обычный коврик'),(26,27,24,5,'Отличная книга по UML'),(27,28,27,4,'Качественный блок питания'),(28,29,26,5,'Яркая и стильная лампа'),(29,30,30,4,'Надёжная защита от скачков'),(30,8,8,4,'Удобная мышь для работы')]
     c.executemany('INSERT INTO reviews VALUES (?,?,?,?,?)', _REVIEWS)
     conn.commit()
+    conn.set_authorizer(_sql_readonly_authorizer)
     return conn
+
+
+_SQL_TIMEOUT_SECONDS = 10.0
+_SQL_MAX_ROWS = 10000
 
 
 def _run_sql_query(conn, sql: str):
     """Выполнить SQL-запрос и вернуть список словарей."""
-    cur = conn.cursor()
-    cur.execute(sql)
-    cols = [d[0] for d in cur.description] if cur.description else []
-    return [dict(zip(cols, row)) for row in cur.fetchall()]
+    import threading
+    timer = threading.Timer(_SQL_TIMEOUT_SECONDS, conn.interrupt)
+    timer.start()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql)
+        cols = [d[0] for d in cur.description] if cur.description else []
+        rows = cur.fetchmany(_SQL_MAX_ROWS)
+        return [dict(zip(cols, row)) for row in rows]
+    finally:
+        timer.cancel()
 
 
 def _translate_sqlite_error(msg: str) -> str:
     """Перевод типичных ошибок SQLite на русский."""
+    if re.search(r'not authorized', msg, re.IGNORECASE):
+        return 'Разрешены только запросы на чтение (SELECT). Изменять данные или таблицы нельзя.'
+    if re.search(r'interrupted', msg, re.IGNORECASE):
+        return 'Запрос выполнялся слишком долго и был прерван. Упростите его.'
     if re.search(r'incomplete input', msg, re.IGNORECASE):
         return 'Неполный SQL-запрос. Проверьте синтаксис.'
     m = re.search(r'near "(.+?)": syntax error', msg, re.IGNORECASE)

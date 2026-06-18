@@ -65,7 +65,7 @@ export function SqlLessonView({ lesson }: SqlLessonViewProps) {
       setResult(null);
       setValidationState('error');
       setValidationMessage(
-        `В этом задании запрещено изменять схему или данные (обнаружена операция «${op}»). Разрешены только запросы SELECT.`,
+        'Разрешены только запросы на чтение (SELECT). Изменять данные или таблицы нельзя.',
       );
       return;
     }
