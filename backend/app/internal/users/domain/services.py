@@ -173,6 +173,9 @@ class UserService:
 
     @staticmethod
     def delete_account(user: User):
-        """Удаление аккаунта: удаляем submissions, затем пользователя (каскадно notifications, progress)"""
-        Submission.objects.filter(student=user).delete()
+        """Удаление аккаунта: сохраняем имя студента в его решениях и обнуляем
+        ссылку на пользователя (on_delete=SET_NULL), чтобы решения остались видны
+        преподавателю с пометкой «Удалённый студент»; уведомления и прогресс
+        удаляются каскадно при удалении пользователя."""
+        Submission.objects.filter(student=user).update(student_display_name=user.display_name)
         user.delete()

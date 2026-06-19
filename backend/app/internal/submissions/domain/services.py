@@ -31,6 +31,7 @@ class SubmissionService:
             defaults={
                 'student_solution': data.student_solution,
                 'execution_result': data.execution_result,
+                'student_display_name': user.display_name,
             }
         )
         is_admin = user.is_staff or user.is_superuser
@@ -41,6 +42,7 @@ class SubmissionService:
             was_approved = submission.status == 'approved'
             submission.student_solution = data.student_solution
             submission.execution_result = data.execution_result
+            submission.student_display_name = user.display_name
 
             if was_approved and not is_admin:
                 # Самостоятельная практика — статус остаётся approved,
